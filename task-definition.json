@@ -1,0 +1,32 @@
+{
+  "family": "react-ecommerce-task",
+  "networkMode": "awsvpc",
+  "containerDefinitions": [
+    {
+      "name": "react-ecommerce-container",
+      "image": "<IMAGE_NAME>",
+      "portMappings": [
+        {
+          "containerPort": 80,
+          "hostPort": 80,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/react-ecommerce-app",
+          "awslogs-region": "ap-southeast-2",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ],
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::147914448101:role/ecsTaskExecutionRole"
+}
