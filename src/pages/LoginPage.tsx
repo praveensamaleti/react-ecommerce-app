@@ -1,0 +1,107 @@
+import React from "react";
+import { Button, Card, Form } from "react-bootstrap";
+import { Link, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { toast } from "react-toastify";
+import { useAuthStore } from "../stores/authStore";
+
+type LoginForm = {
+  email: string;
+  password: string;
+};
+
+export const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
+  const login = useAuthStore((s) => s.login);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const error = useAuthStore((s) => s.error);
+  const clearError = useAuthStore((s) => s.clearError);
+  const user = useAuthStore((s) => s.user);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors }
+  } = useForm<LoginForm>({ defaultValues: { email: "", password: "" } });
+
+  React.useEffect(() => {
+    if (user) navigate("/");
+  }, [user, navigate]);
+
+  const onSubmit = async (data: LoginForm) => {
+    clearError();
+    const ok = await login(data.email, data.password);
+    if (ok) {
+      toast.success("Welcome back!");
+      navigate("/");
+    } else {
+      toast.error("Login failed.");
+    }
+  };
+
+  return (
+    <div className="d-flex justify-content-center">
+      <Card className="shadow-sm" style={{ maxWidth: 460, width: "100%" }}>
+        <Card.Body>
+          <Card.Title className="h4">Login</Card.Title>
+          <Card.Text className="text-muted">
+            Use `user@example.com` / `Password123!` or `admin@example.com` /
+            `Admin123!`.
+          </Card.Text>
+
+          {error ? (
+            <div className="alert alert-danger" role="alert">
+              {error}
+            </div>
+          ) : null}
+
+          <Form onSubmit={handleSubmit(onSubmit)} aria-label="Login form">
+            <Form.Group className="mb-3" controlId="loginEmail">
+              <Form.Label>Email</Form.Label>
+              <Form.Control
+                type="email"
+                placeholder="you@example.com"
+                aria-invalid={Boolean(errors.email)}
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: { value: /^\S+@\S+\.\S+$/, message: "Invalid email" }
+                })}
+              />
+              {errors.email ? (
+                <div className="text-danger small mt-1">
+                  {errors.email.message}
+                </div>
+              ) : null}
+            </Form.Group>
+
+            <Form.Group className="mb-3" controlId="loginPassword">
+              <Form.Label>Password</Form.Label>
+              <Form.Control
+                type="password"
+                aria-invalid={Boolean(errors.password)}
+                {...register("password", { required: "Password is required" })}
+              />
+              {errors.password ? (
+                <div className="text-danger small mt-1">
+                  {errors.password.message}
+                </div>
+              ) : null}
+            </Form.Group>
+
+            <div className="d-grid">
+              <Button type="submit" variant="primary" disabled={isLoading}>
+                {isLoading ? "Signing in..." : "Login"}
+              </Button>
+            </div>
+          </Form>
+
+          <div className="text-center mt-3">
+            <span className="text-muted">No account?</span>{" "}
+            <Link to="/register">Register</Link>
+          </div>
+        </Card.Body>
+      </Card>
+    </div>
+  );
+};
+
