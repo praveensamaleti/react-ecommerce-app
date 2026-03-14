@@ -12,8 +12,8 @@ export const AppNavbar: React.FC = () => {
   const logout = useAuthStore((s) => s.logout);
   const itemCount = useCartStore((s) => s.totals.itemCount);
 
-  const onLogout = () => {
-    logout();
+  const onLogout = async () => {
+    await logout();
     navigate("/");
   };
 

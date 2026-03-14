@@ -64,8 +64,9 @@ The [deploy.yml](.github/workflows/deploy.yml) workflow expects the following re
 
 1. **Amazon ECR**: A repository named `react-ecommerce-app`.
 2. **Amazon ECS Cluster**: A cluster named `react-ecommerce-app`.
-3. **Amazon ECS Service**: A service named `react-ecommerce-service`.
-4. **CloudWatch Logs**: A log group named `/ecs/react-ecommerce-app`.
+3. **Amazon ECS Service**: A service named `react-ecommerce-service` configured with an Application Load Balancer.
+4. **Application Load Balancer**: A stable DNS name provided by an ALB pointing to the service's target group.
+5. **CloudWatch Logs**: A log group named `/ecs/react-ecommerce-app`.
 
 Refer to [task-definition.json](task-definition.json) for the container configuration details.
 

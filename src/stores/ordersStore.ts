@@ -1,7 +1,6 @@
 import { create } from "zustand";
-import type { Address, Order, OrderItem, Payment, Product, User } from "../types/domain";
-import { withDelay } from "../utils/mockApi";
-import { mockOrders } from "../data/mocks";
+import type { Address, Order, Payment, Product, User } from "../types/domain";
+import api from "../utils/api";
 
 type OrdersState = {
   orders: Order[];
@@ -24,14 +23,6 @@ type OrdersActions = {
   updateOrderStatus: (orderId: string, status: Order["status"]) => void;
 };
 
-function computeOrderTotals(items: OrderItem[]) {
-  const subtotal = items.reduce((s, it) => s + it.price * it.qty, 0);
-  const discount = subtotal * 0.1;
-  const tax = Math.max(0, subtotal - discount) * 0.08;
-  const total = Math.max(0, subtotal - discount) + tax;
-  return { subtotal, discount, tax, total };
-}
-
 export const useOrdersStore = create<OrdersState & OrdersActions>()((set, get) => ({
   orders: [],
   isLoading: false,
@@ -39,52 +30,54 @@ export const useOrdersStore = create<OrdersState & OrdersActions>()((set, get) =
 
   loadOrdersForUser: async (userId) => {
     set({ isLoading: true, error: null });
-    const res = await withDelay(() => mockOrders.filter((o) => o.userId === userId), 650);
-    if (!res.ok) {
-      set({ isLoading: false, error: res.error });
-      return;
+    try {
+      const response = await api.get("/api/orders", { params: { userId } });
+      set({ isLoading: false, orders: response.data, error: null });
+    } catch (err: any) {
+      set({ 
+        isLoading: false, 
+        error: err.response?.data?.message || "Failed to load orders." 
+      });
     }
-    set({ isLoading: false, orders: res.data });
   },
 
-  placeOrder: async ({ user, items, products, shipping, billing }) => {
+  placeOrder: async ({ items, shipping, billing, payment }) => {
     set({ isLoading: true, error: null });
-    const res = await withDelay(() => {
-      const productMap = new Map(products.map((p) => [p.id, p] as const));
-      const orderItems: OrderItem[] = items.map((it) => {
-        const p = productMap.get(it.productId);
-        if (!p) throw new Error("Some cart items are no longer available.");
-        return { productId: p.id, name: p.name, price: p.price, qty: it.qty };
-      });
-      const totals = computeOrderTotals(orderItems);
-      const order: Order = {
-        id: `o${Math.floor(Math.random() * 900000) + 100000}`,
-        userId: user.id,
-        createdAt: new Date().toISOString(),
-        status: "pending",
-        items: orderItems,
+    try {
+      const response = await api.post("/api/orders", {
+        items,
         shipping,
         billing,
-        ...totals
-      };
-      mockOrders.unshift(order);
+        payment
+      });
+      const order = response.data;
+      set({ 
+        isLoading: false, 
+        orders: [order, ...get().orders],
+        error: null 
+      });
       return order;
-    }, 900);
-
-    if (!res.ok) {
-      set({ isLoading: false, error: res.error });
+    } catch (err: any) {
+      set({ 
+        isLoading: false, 
+        error: err.response?.data?.message || "Failed to place order." 
+      });
       return null;
     }
-
-    set({ isLoading: false, orders: [res.data, ...get().orders] });
-    return res.data;
   },
 
-  updateOrderStatus: (orderId, status) => {
-    const next = get().orders.map((o) => (o.id === orderId ? { ...o, status } : o));
-    set({ orders: next });
-    const idx = mockOrders.findIndex((o) => o.id === orderId);
-    if (idx >= 0) mockOrders[idx] = { ...mockOrders[idx], status };
+  updateOrderStatus: async (orderId, status) => {
+    set({ isLoading: true });
+    try {
+      const response = await api.patch(`/api/admin/orders/${orderId}/status`, { status });
+      const updatedOrder = response.data;
+      const next = get().orders.map((o) => (o.id === orderId ? updatedOrder : o));
+      set({ orders: next, isLoading: false, error: null });
+    } catch (err: any) {
+      set({ 
+        isLoading: false, 
+        error: err.response?.data?.message || "Failed to update order status." 
+      });
+    }
   }
 }));
-

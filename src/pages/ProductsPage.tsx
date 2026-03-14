@@ -28,6 +28,7 @@ const categories: Array<Category | "All"> = ["All", "Electronics", "Clothing"];
 export const ProductsPage: React.FC = () => {
   const {
     products,
+    totalCount,
     isLoading,
     error,
     filters,
@@ -40,7 +41,6 @@ export const ProductsPage: React.FC = () => {
     resetFilters
   } = useProductsStore();
 
-  const filtered = React.useMemo(() => selectFilteredProducts({ products, filters } as any), [products, filters]);
   const addToCart = useCartStore((s) => s.addToCart);
   useCartAutoTotals();
 
@@ -57,10 +57,9 @@ export const ProductsPage: React.FC = () => {
     setQuery(debouncedSearch);
   }, [debouncedSearch, setQuery]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / filters.pageSize));
-  const page = Math.min(filters.page, totalPages);
-  const start = (page - 1) * filters.pageSize;
-  const pageItems = filtered.slice(start, start + filters.pageSize);
+  const totalPages = Math.max(1, Math.ceil(totalCount / filters.pageSize));
+  const page = Math.min(filters.page, totalPages - 1);
+  const pageItems = products;
 
   const onAdd = (id: string, qty = 1) => {
     addToCart(id, qty);
@@ -80,7 +79,7 @@ export const ProductsPage: React.FC = () => {
         <h1 className="h3 m-0">Products</h1>
         <div className="d-flex align-items-center gap-2">
           <Badge bg="light" text="dark" className="border">
-            {filtered.length} results
+            {totalCount} results
           </Badge>
           <Button variant="outline-primary" size="sm" onClick={resetFilters}>
             <SlidersHorizontal size={16} className="me-2" aria-hidden="true" />
@@ -155,7 +154,7 @@ export const ProductsPage: React.FC = () => {
           {isLoading ? <LoadingSpinner label="Loading catalog..." /> : null}
           {error ? <div className="alert alert-danger">{error}</div> : null}
 
-          {!isLoading && !error && filtered.length === 0 ? (
+          {!isLoading && !error && products.length === 0 ? (
             <EmptyState
               title="No products found"
               description="Try adjusting your search or filters."
@@ -179,29 +178,28 @@ export const ProductsPage: React.FC = () => {
             ))}
           </Row>
 
-          {!isLoading && !error && filtered.length > 0 ? (
+          {!isLoading && !error && products.length > 0 ? (
             <div className="d-flex justify-content-center mt-4">
               <Pagination aria-label="Pagination">
                 <Pagination.Prev
-                  onClick={() => setPage(Math.max(1, page - 1))}
-                  disabled={page <= 1}
+                  onClick={() => setPage(Math.max(0, filters.page - 1))}
+                  disabled={filters.page === 0}
                 />
                 {Array.from({ length: totalPages }).slice(0, 7).map((_, i) => {
-                  const p = i + 1;
                   return (
                     <Pagination.Item
-                      key={p}
-                      active={p === page}
-                      onClick={() => setPage(p)}
-                      aria-label={`Page ${p}`}
+                      key={i}
+                      active={i === filters.page}
+                      onClick={() => setPage(i)}
+                      aria-label={`Page ${i + 1}`}
                     >
-                      {p}
+                      {i + 1}
                     </Pagination.Item>
                   );
                 })}
                 <Pagination.Next
-                  onClick={() => setPage(Math.min(totalPages, page + 1))}
-                  disabled={page >= totalPages}
+                  onClick={() => setPage(Math.min(totalPages - 1, filters.page + 1))}
+                  disabled={filters.page >= totalPages - 1}
                 />
               </Pagination>
             </div>
