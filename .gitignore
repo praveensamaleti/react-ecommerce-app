@@ -18,13 +18,13 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Environment files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.sample
-!.env.example
+# .env
+# .env.local
+# .env.development.local
+# .env.test.local
+# .env.production.local
+# .env.sample
+# !.env.example
 
 # IDE / Editor
 .vscode/
