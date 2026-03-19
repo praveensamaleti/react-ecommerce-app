@@ -40,7 +40,7 @@ export const HomePage: React.FC = () => {
       <section className="hero-section rounded-3 shadow-sm">
         <Row className="align-items-center g-4">
           <Col md={7}>
-            <h1>Shop smarter. Live better.</h1>
+            <h1>Your One-Stop Online Store</h1>
             <p className="mb-4">
               Discover modern essentials in Electronics and Clothing. Powered by
               a live backend—data served from PostgreSQL with Redis caching.
