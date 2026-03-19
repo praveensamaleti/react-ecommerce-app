@@ -57,7 +57,7 @@ const renderAt = (path: string, user: any = null) => {
 describe('App routing', () => {
   it('/ renders HomePage', () => {
     renderAt('/');
-    expect(screen.getByText(/shop smarter/i)).toBeInTheDocument();
+    expect(screen.getByText(/your one-stop online store/i)).toBeInTheDocument();
   });
 
   it('/login renders LoginPage', () => {
@@ -100,7 +100,7 @@ describe('App routing', () => {
 
   it('unknown path redirects to /', () => {
     renderAt('/some-unknown-route');
-    expect(screen.getByText(/shop smarter/i)).toBeInTheDocument();
+    expect(screen.getByText(/your one-stop online store/i)).toBeInTheDocument();
   });
 
   it('/order-success renders OrderSuccessPage', () => {
