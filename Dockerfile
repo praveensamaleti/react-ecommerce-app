@@ -12,6 +12,13 @@ RUN npm install
 # Copy the rest of the application code
 COPY . .
 
+# Accept the backend API URL as a build argument.
+# The GitHub Actions workflow reads BackendALBDNS from the CloudFormation
+# compute stack output and passes it here via --build-arg.
+# CRA bakes REACT_APP_* variables into the JS bundle at build time.
+ARG REACT_APP_API_URL
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
+
 # Build the React application
 RUN npm run build
 

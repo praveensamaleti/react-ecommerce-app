@@ -1,25 +1,29 @@
-name: Deploy to AWS ECR/App Runner
+name: Build and Deploy to AWS ECS
 
+# ── Triggers ──────────────────────────────────────────────────────────────────
+# Push to main  : standard CI/CD trigger
+# workflow_dispatch: manual trigger from GitHub Actions UI or pre-demo.sh script.
+#   stack_name input overrides the STACK_NAME repository variable.
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      stack_name:
+        description: 'CloudFormation stack prefix (EnvironmentName used in ecommerce-infra)'
+        required: false
+        default: ''
 
 env:
-  AWS_REGION: ap-southeast-2                   # set this to your preferred AWS region
-  ECR_REPOSITORY: react-ecommerce-app      # set this to your Amazon ECR repository name
-  ECS_SERVICE: react-ecommerce-service     # set this to your Amazon ECS service name
-  ECS_CLUSTER: react-ecommerce-app     # set this to your Amazon ECS cluster name
-  ECS_TASK_DEFINITION: task-definition.json # set this to the path to your Amazon ECS task definition
-                                               # file, e.g. .aws/task-definition.json
-  CONTAINER_NAME: react-ecommerce-container # set this to the name of the container in the
-                                               # containerDefinitions section of your task definition
+  AWS_REGION: ap-southeast-2
 
 permissions:
   contents: read
 
 jobs:
+  # ── Job 1: Test ───────────────────────────────────────────────────────────────
   test:
-    name: Test
+    name: Run Jest Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,56 +32,194 @@ jobs:
           node-version: '20'
       - run: node --version && npm --version
       - run: npm install
-      - run: npm run test:ci
+      - name: Run tests with coverage check (85% threshold enforced)
+        run: npm run test:ci
         env:
           CI: true
 
+  # ── Job 2: Build + Deploy ─────────────────────────────────────────────────────
   deploy:
-    name: Deploy
+    name: Build → Push → Deploy
     runs-on: ubuntu-latest
-    needs: test
+    needs: test                  # deploy only runs if tests pass
     environment: production
 
     steps:
-    - name: Checkout
+    # ── Checkout ─────────────────────────────────────────────────────────────
+    - name: Checkout source
       uses: actions/checkout@v4
 
+    # ── AWS credentials ───────────────────────────────────────────────────────
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
+        aws-region:            ${{ env.AWS_REGION }}
 
+    # ── Resolve stack name ────────────────────────────────────────────────────
+    # Priority: workflow_dispatch input → GitHub repository variable → default
+    - name: Resolve CloudFormation stack name
+      id: stack
+      run: |
+        STACK_NAME="${{ github.event.inputs.stack_name }}"
+        if [ -z "$STACK_NAME" ]; then
+          STACK_NAME="${{ vars.STACK_NAME }}"
+        fi
+        if [ -z "$STACK_NAME" ]; then
+          STACK_NAME="ecommerce-demo"
+        fi
+        echo "name=$STACK_NAME" >> "$GITHUB_OUTPUT"
+        echo "Using CloudFormation stack prefix: $STACK_NAME"
+
+    # ── Read all values from CloudFormation outputs ───────────────────────────
+    # Reads both the frontend infra values AND the backend ALB DNS so the
+    # React app can be built with the correct REACT_APP_API_URL baked in.
+    - name: Read infrastructure config from CloudFormation
+      id: infra
+      env:
+        STACK_NAME: ${{ steps.stack.outputs.name }}
+      run: |
+        COMPUTE_STACK="${STACK_NAME}-compute"
+
+        get_output() {
+          aws cloudformation describe-stacks \
+            --stack-name "$COMPUTE_STACK" \
+            --region     "${{ env.AWS_REGION }}" \
+            --query      "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" \
+            --output     text
+        }
+
+        ECR_URI=$(get_output         "FrontendECRRepositoryUri")
+        ECS_CLUSTER=$(get_output     "ECSClusterName")
+        ECS_SERVICE=$(get_output     "FrontendServiceName")
+        TASK_FAMILY=$(get_output     "FrontendTaskDefFamily")
+        CONTAINER_NAME=$(get_output  "FrontendContainerName")
+        BACKEND_ALB_DNS=$(get_output "BackendALBDNS")
+
+        # Validate that we got real values (not empty or "None")
+        for VAR in ECR_URI ECS_CLUSTER ECS_SERVICE TASK_FAMILY CONTAINER_NAME BACKEND_ALB_DNS; do
+          VALUE="${!VAR}"
+          if [ -z "$VALUE" ] || [ "$VALUE" = "None" ]; then
+            echo "ERROR: Could not read '$VAR' from stack '$COMPUTE_STACK'."
+            echo "Make sure the ecommerce-infra compute stack is deployed first."
+            exit 1
+          fi
+        done
+
+        # REACT_APP_API_URL must use http:// (no trailing slash) — CRA standard
+        REACT_APP_API_URL="http://${BACKEND_ALB_DNS}"
+
+        echo "ecr_uri=$ECR_URI"                     >> "$GITHUB_OUTPUT"
+        echo "ecs_cluster=$ECS_CLUSTER"             >> "$GITHUB_OUTPUT"
+        echo "ecs_service=$ECS_SERVICE"             >> "$GITHUB_OUTPUT"
+        echo "task_family=$TASK_FAMILY"             >> "$GITHUB_OUTPUT"
+        echo "container_name=$CONTAINER_NAME"       >> "$GITHUB_OUTPUT"
+        echo "react_app_api_url=$REACT_APP_API_URL" >> "$GITHUB_OUTPUT"
+
+        echo "──────────────────────────────────────────"
+        echo " Infra config resolved from CloudFormation"
+        echo "──────────────────────────────────────────"
+        echo "  ECR URI            : $ECR_URI"
+        echo "  ECS Cluster        : $ECS_CLUSTER"
+        echo "  ECS Service        : $ECS_SERVICE"
+        echo "  Task family        : $TASK_FAMILY"
+        echo "  Container          : $CONTAINER_NAME"
+        echo "  Backend ALB DNS    : $BACKEND_ALB_DNS"
+        echo "  REACT_APP_API_URL  : $REACT_APP_API_URL"
+        echo "──────────────────────────────────────────"
+
+    # ── ECR login ─────────────────────────────────────────────────────────────
     - name: Login to Amazon ECR
-      id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Build, tag, and push image to Amazon ECR
+    # ── Build + push image ────────────────────────────────────────────────────
+    # REACT_APP_API_URL is passed as a Docker build argument so it gets
+    # embedded into the compiled JS bundle (CRA bakes REACT_APP_* at build time).
+    # The Dockerfile exposes ARG REACT_APP_API_URL for this purpose.
+    - name: Build Docker image (with backend API URL baked in) and push to ECR
       id: build-image
       env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        IMAGE_TAG: ${{ github.sha }}
+        ECR_URI:            ${{ steps.infra.outputs.ecr_uri }}
+        IMAGE_TAG:          ${{ github.sha }}
+        REACT_APP_API_URL:  ${{ steps.infra.outputs.react_app_api_url }}
       run: |
-        # Build a docker container and
-        # push it to ECR so that it can
-        # be deployed to AWS.
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+        IMAGE="${ECR_URI}:${IMAGE_TAG}"
+        echo "Building image: $IMAGE"
+        echo "REACT_APP_API_URL baked in: $REACT_APP_API_URL"
 
-    - name: Fill in the new image ID in the Amazon ECS task definition
-      id: task-def
-      uses: aws-actions/amazon-ecs-render-task-definition@v1
-      with:
-        task-definition: ${{ env.ECS_TASK_DEFINITION }}
-        container-name: ${{ env.CONTAINER_NAME }}
-        image: ${{ steps.build-image.outputs.image }}
+        docker build \
+          --build-arg REACT_APP_API_URL="$REACT_APP_API_URL" \
+          -t "$IMAGE" \
+          .
 
-    - name: Deploy Amazon ECS task definition
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-      with:
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
-        service: ${{ env.ECS_SERVICE }}
-        cluster: ${{ env.ECS_CLUSTER }}
-        wait-for-service-stability: true
+        docker push "$IMAGE"
+        echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+        echo "Image pushed: $IMAGE"
+
+    # ── Deploy to ECS ─────────────────────────────────────────────────────────
+    # Same pattern as backend: download current task def from ECS, inject new
+    # image, register new revision, update service with desired-count=1, wait.
+    - name: Deploy new image to ECS
+      env:
+        IMAGE:          ${{ steps.build-image.outputs.image }}
+        ECS_CLUSTER:    ${{ steps.infra.outputs.ecs_cluster }}
+        ECS_SERVICE:    ${{ steps.infra.outputs.ecs_service }}
+        TASK_FAMILY:    ${{ steps.infra.outputs.task_family }}
+        CONTAINER_NAME: ${{ steps.infra.outputs.container_name }}
+        AWS_REGION:     ${{ env.AWS_REGION }}
+      run: |
+        echo "Step 1: Downloading current task definition from ECS..."
+        aws ecs describe-task-definition \
+          --task-definition "$TASK_FAMILY" \
+          --region          "$AWS_REGION" \
+          --query           taskDefinition \
+          | jq 'del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy,
+              .deregisteredAt
+            )' > /tmp/task-def.json
+
+        echo "Step 2: Injecting new image into container definition..."
+        jq \
+          --arg img "$IMAGE" \
+          --arg ctr "$CONTAINER_NAME" \
+          '(.containerDefinitions[] | select(.name == $ctr) | .image) |= $img' \
+          /tmp/task-def.json > /tmp/task-def-new.json
+
+        echo "  New image: $IMAGE"
+        echo "  Container: $CONTAINER_NAME"
+
+        echo "Step 3: Registering new task definition revision..."
+        NEW_ARN=$(aws ecs register-task-definition \
+          --region         "$AWS_REGION" \
+          --cli-input-json "$(cat /tmp/task-def-new.json)" \
+          --query          'taskDefinition.taskDefinitionArn' \
+          --output         text)
+        echo "  Registered: $NEW_ARN"
+
+        echo "Step 4: Updating ECS service (new task def + desired-count=1)..."
+        aws ecs update-service \
+          --cluster        "$ECS_CLUSTER" \
+          --service        "$ECS_SERVICE" \
+          --task-definition "$NEW_ARN" \
+          --desired-count  1 \
+          --region         "$AWS_REGION"
+
+        echo "Step 5: Waiting for service to stabilize..."
+        echo "  (Nginx starts quickly — should stabilize within ~30s)"
+        aws ecs wait services-stable \
+          --cluster  "$ECS_CLUSTER" \
+          --services "$ECS_SERVICE" \
+          --region   "$AWS_REGION"
+
+        echo "────────────────────────────────────────────"
+        echo "  Frontend deployment complete!"
+        echo "  Image: $IMAGE"
+        echo "  Task:  $NEW_ARN"
+        echo "────────────────────────────────────────────"
