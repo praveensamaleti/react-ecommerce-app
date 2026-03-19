@@ -42,8 +42,8 @@ export const HomePage: React.FC = () => {
           <Col md={7}>
             <h1>Shop smarter. Live better.</h1>
             <p className="mb-4">
-              Discover modern essentials in Electronics and Clothing. All mocked,
-              fully functional frontend—no backend needed.
+              Discover modern essentials in Electronics and Clothing. Powered by
+              a live backend—data served from PostgreSQL with Redis caching.
             </p>
             <div className="d-flex gap-2 flex-wrap">
               <LinkButton to="/products" variant="light">
@@ -60,7 +60,7 @@ export const HomePage: React.FC = () => {
               <ul className="mt-3 mb-0">
                 <li>Search + filters + pagination</li>
                 <li>Zustand global state (cart/auth/products/orders)</li>
-                <li>Checkout flow with mock order success</li>
+                <li>Live data from PostgreSQL + Redis cache</li>
               </ul>
             </div>
           </Col>
