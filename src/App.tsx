@@ -85,7 +85,7 @@ const App: React.FC = () => {
         </Container>
       </main>
       <AppFooter />
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer position="top-right" autoClose={3000} theme={theme} />
     </div>
   );
 };
