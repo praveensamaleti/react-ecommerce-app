@@ -6,6 +6,7 @@ import { useCartStore } from './stores/cartStore';
 import { useProductsStore } from './stores/productsStore';
 import { useOrdersStore } from './stores/ordersStore';
 import { useCartAutoTotals } from './hooks/useCartAutoTotals';
+import { useThemeStore } from './stores/themeStore';
 import App from './App';
 
 // Mock all stores and hooks to prevent real API calls
@@ -14,6 +15,7 @@ jest.mock('./stores/cartStore');
 jest.mock('./stores/productsStore');
 jest.mock('./stores/ordersStore');
 jest.mock('./hooks/useCartAutoTotals');
+jest.mock('./stores/themeStore');
 jest.mock('react-toastify', () => ({
   toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
   ToastContainer: () => null,
@@ -38,6 +40,10 @@ const setupMocks = (user: any = null) => {
     return typeof selector === 'function' ? selector(defaultOrders) : defaultOrders;
   });
   (useCartAutoTotals as jest.Mock).mockReturnValue(undefined);
+  (useThemeStore as jest.Mock).mockImplementation((selector: any) => {
+    const state = { theme: 'light', toggleTheme: jest.fn(), setTheme: jest.fn() };
+    return typeof selector === 'function' ? selector(state) : state;
+  });
 };
 
 beforeEach(() => {

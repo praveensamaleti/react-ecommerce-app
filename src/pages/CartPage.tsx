@@ -48,7 +48,7 @@ export const CartPage: React.FC = () => {
     <Row className="g-4">
       <Col lg={8}>
         <h1 className="h3 mb-3">Cart</h1>
-        <div className="bg-white rounded-3 shadow-sm p-3">
+        <div className="rounded-3 shadow-sm p-3 bg-body-tertiary">
           {hydrated.map(({ it, p }) => (
             <CartItemRow
               key={p.id}

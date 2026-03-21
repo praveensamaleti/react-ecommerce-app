@@ -5,6 +5,7 @@ import { ShoppingCart, User as UserIcon, LogOut, Shield } from "lucide-react";
 import { useAuthStore } from "../stores/authStore";
 import { useCartStore } from "../stores/cartStore";
 import { LinkButton } from "./LinkButton";
+import { ThemeToggle } from "./ThemeToggle";
 
 export const AppNavbar: React.FC = () => {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ export const AppNavbar: React.FC = () => {
   };
 
   return (
-    <Navbar bg="white" expand="lg" fixed="top" className="shadow-sm" aria-label="Main navigation">
+    <Navbar bg="body" expand="lg" fixed="top" className="shadow-sm" aria-label="Main navigation">
       <Container fluid="lg">
         <Navbar.Brand as={Link} to="/" className="fw-bold text-primary">
           React Store
@@ -35,6 +36,7 @@ export const AppNavbar: React.FC = () => {
           </Nav>
 
           <Nav className="ms-auto align-items-lg-center gap-lg-2">
+            <ThemeToggle />
             <Nav.Link as={NavLink} to="/cart" aria-label="Cart">
               <span className="d-inline-flex align-items-center gap-2">
                 <ShoppingCart size={18} aria-hidden="true" />

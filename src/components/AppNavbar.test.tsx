@@ -4,9 +4,11 @@ import { MemoryRouter } from 'react-router-dom';
 import { AppNavbar } from './AppNavbar';
 import { useAuthStore } from '../stores/authStore';
 import { useCartStore } from '../stores/cartStore';
+import { useThemeStore } from '../stores/themeStore';
 
 jest.mock('../stores/authStore');
 jest.mock('../stores/cartStore');
+jest.mock('../stores/themeStore');
 
 const mockLogout = jest.fn().mockResolvedValue(undefined);
 
@@ -24,9 +26,14 @@ const makeCartState = (itemCount: number) => {
   });
 };
 
+const makeThemeState = () => {
+  (useThemeStore as jest.Mock).mockReturnValue({ theme: 'light', toggleTheme: jest.fn() });
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
   makeCartState(0);
+  makeThemeState();
 });
 
 const wrap = (ui: React.ReactElement) =>
@@ -110,5 +117,14 @@ describe('AppNavbar — logout', () => {
     await waitFor(() => {
       expect(mockLogout).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+describe('AppNavbar — theme toggle', () => {
+  beforeEach(() => makeAuthState(null));
+
+  it('shows theme toggle button', () => {
+    wrap(<AppNavbar />);
+    expect(screen.getByRole('button', { name: /switch to dark mode/i })).toBeInTheDocument();
   });
 });

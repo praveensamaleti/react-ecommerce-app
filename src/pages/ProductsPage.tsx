@@ -71,7 +71,7 @@ export const ProductsPage: React.FC = () => {
     setShowQuick(true);
   };
 
-  const priceMax = Math.max(filters.maxPrice, 1);
+  const PRICE_MAX = 1000;
 
   return (
     <div>
@@ -90,7 +90,7 @@ export const ProductsPage: React.FC = () => {
 
       <Row className="g-3">
         <Col lg={3}>
-          <div className="bg-white rounded-3 shadow-sm p-3">
+          <div className="rounded-3 shadow-sm p-3 bg-body-tertiary">
             <div className="fw-semibold mb-2">Search</div>
             <InputGroup>
               <InputGroup.Text aria-hidden="true">
@@ -123,11 +123,11 @@ export const ProductsPage: React.FC = () => {
 
             <div className="fw-semibold mb-2">Price range</div>
             <Form.Label className="small text-muted">
-              ${filters.minPrice} – ${filters.maxPrice}
+              $0 – ${filters.maxPrice}
             </Form.Label>
             <Form.Range
               min={0}
-              max={priceMax}
+              max={PRICE_MAX}
               value={filters.maxPrice}
               onChange={(e) => setPriceRange(0, Number(e.target.value))}
               aria-label="Max price"
