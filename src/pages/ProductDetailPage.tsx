@@ -78,7 +78,7 @@ export const ProductDetailPage: React.FC = () => {
 
       <Row className="g-4">
         <Col lg={6}>
-          <div className="bg-white rounded-3 shadow-sm p-2">
+          <div className="bg-body-tertiary rounded-3 shadow-sm p-2">
             <Carousel interval={null} aria-label="Product images">
               {product.images.map((src, idx) => (
                 <Carousel.Item key={`${product.id}-${idx}`}>
@@ -95,7 +95,7 @@ export const ProductDetailPage: React.FC = () => {
         </Col>
 
         <Col lg={6}>
-          <div className="bg-white rounded-3 shadow-sm p-4">
+          <div className="bg-body-tertiary rounded-3 shadow-sm p-4">
             <div className="d-flex justify-content-between align-items-start gap-2">
               <div>
                 <div className="h4 text-primary mb-1">
@@ -160,7 +160,7 @@ export const ProductDetailPage: React.FC = () => {
         </Col>
       </Row>
 
-      <div className="bg-white rounded-3 shadow-sm p-4 mt-4">
+      <div className="bg-body-tertiary rounded-3 shadow-sm p-4 mt-4">
         <div className="d-flex justify-content-between align-items-center">
           <h2 className="h5 m-0">Reviews</h2>
           <div className="small text-muted">{product.reviews.length} total</div>
