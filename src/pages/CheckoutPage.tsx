@@ -5,10 +5,10 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import type { Address, Payment } from "../types/domain";
 import { useCurrencyFormatter } from "../hooks/useCurrencyFormatter";
-import { useAuthStore } from "../stores/authStore";
-import { useCartStore } from "../stores/cartStore";
-import { useProductsStore } from "../stores/productsStore";
-import { useOrdersStore } from "../stores/ordersStore";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { clearCart } from "../store/slices/cartSlice";
+import { loadProductsThunk } from "../store/slices/productsSlice";
+import { placeOrderThunk } from "../store/slices/ordersSlice";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { useCartAutoTotals } from "../hooks/useCartAutoTotals";
@@ -20,20 +20,19 @@ type CheckoutForm = Address &
 
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
-  const items = useCartStore((s) => s.items);
-  const totals = useCartStore((s) => s.totals);
-  const clearCart = useCartStore((s) => s.clearCart);
-
-  const { products, isLoading: productsLoading, loadProducts } = useProductsStore();
-  const placeOrder = useOrdersStore((s) => s.placeOrder);
-  const ordersLoading = useOrdersStore((s) => s.isLoading);
+  const dispatch = useAppDispatch();
+  const user = useAppSelector((s) => s.auth.user);
+  const items = useAppSelector((s) => s.cart.items);
+  const totals = useAppSelector((s) => s.cart.totals);
+  const products = useAppSelector((s) => s.products.products);
+  const productsLoading = useAppSelector((s) => s.products.isLoading);
+  const ordersLoading = useAppSelector((s) => s.orders.isLoading);
   const fmt = useCurrencyFormatter();
   useCartAutoTotals();
 
   React.useEffect(() => {
-    if (products.length === 0) loadProducts();
-  }, [products.length, loadProducts]);
+    if (products.length === 0) dispatch(loadProductsThunk());
+  }, [products.length, dispatch]);
 
   const {
     register,
@@ -121,23 +120,17 @@ export const CheckoutPage: React.FC = () => {
       cvc: data.cvc
     };
 
-    const order = await placeOrder({
-      user,
-      items,
-      products,
-      shipping,
-      billing,
-      payment
-    });
+    const result = await dispatch(
+      placeOrderThunk({ items, shipping, billing, payment })
+    );
 
-    if (!order) {
+    if (placeOrderThunk.fulfilled.match(result)) {
+      dispatch(clearCart());
+      toast.success("Order placed!");
+      navigate("/order-success", { state: { orderId: result.payload.id } });
+    } else {
       toast.error("Could not place order. Please try again.");
-      return;
     }
-
-    clearCart();
-    toast.success("Order placed!");
-    navigate("/order-success", { state: { orderId: order.id } });
   };
 
   return (
@@ -363,4 +356,3 @@ export const CheckoutPage: React.FC = () => {
     </Row>
   );
 };
-

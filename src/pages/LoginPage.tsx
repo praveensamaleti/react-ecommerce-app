@@ -3,7 +3,8 @@ import { Button, Card, Form } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
-import { useAuthStore } from "../stores/authStore";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { clearError, loginThunk } from "../store/slices/authSlice";
 
 type LoginForm = {
   email: string;
@@ -12,11 +13,10 @@ type LoginForm = {
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const login = useAuthStore((s) => s.login);
-  const isLoading = useAuthStore((s) => s.isLoading);
-  const error = useAuthStore((s) => s.error);
-  const clearError = useAuthStore((s) => s.clearError);
-  const user = useAuthStore((s) => s.user);
+  const dispatch = useAppDispatch();
+  const isLoading = useAppSelector((s) => s.auth.isLoading);
+  const error = useAppSelector((s) => s.auth.error);
+  const user = useAppSelector((s) => s.auth.user);
 
   const {
     register,
@@ -29,9 +29,9 @@ export const LoginPage: React.FC = () => {
   }, [user, navigate]);
 
   const onSubmit = async (data: LoginForm) => {
-    clearError();
-    const ok = await login(data.email, data.password);
-    if (ok) {
+    dispatch(clearError());
+    const result = await dispatch(loginThunk({ email: data.email, password: data.password }));
+    if (loginThunk.fulfilled.match(result)) {
       toast.success("Welcome back!");
       navigate("/");
     } else {
@@ -104,4 +104,3 @@ export const LoginPage: React.FC = () => {
     </div>
   );
 };
-

@@ -13,25 +13,27 @@ import { toast } from "react-toastify";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { EmptyState } from "../components/EmptyState";
 import { RatingStars } from "../components/RatingStars";
-import { useProductsStore } from "../stores/productsStore";
-import { useCartStore } from "../stores/cartStore";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { loadProductsThunk } from "../store/slices/productsSlice";
+import { addToCart } from "../store/slices/cartSlice";
 import { useCurrencyFormatter } from "../hooks/useCurrencyFormatter";
 import { useCartAutoTotals } from "../hooks/useCartAutoTotals";
 
 export const ProductDetailPage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
-  const { products, isLoading, error, loadProducts } = useProductsStore();
-  const addToCart = useCartStore((s) => s.addToCart);
+  const dispatch = useAppDispatch();
+  const products = useAppSelector((s) => s.products.products);
+  const isLoading = useAppSelector((s) => s.products.isLoading);
+  const error = useAppSelector((s) => s.products.error);
   const fmt = useCurrencyFormatter();
   useCartAutoTotals();
 
   const [qty, setQty] = React.useState(1);
 
   React.useEffect(() => {
-    if (products.length === 0) loadProducts();
-  }, [products.length, loadProducts]);
+    if (products.length === 0) dispatch(loadProductsThunk());
+  }, [products.length, dispatch]);
 
   const product = products.find((p) => p.id === id);
 
@@ -57,7 +59,7 @@ export const ProductDetailPage: React.FC = () => {
 
   const onAdd = () => {
     const nextQty = Math.min(maxQty, Math.max(1, qty));
-    addToCart(product.id, nextQty);
+    dispatch(addToCart({ productId: product.id, qty: nextQty }));
     toast.success("Added to cart.");
   };
 
@@ -191,4 +193,3 @@ export const ProductDetailPage: React.FC = () => {
     </div>
   );
 };
-

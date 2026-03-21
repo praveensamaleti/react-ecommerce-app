@@ -1,146 +1,129 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import { AppNavbar } from './AppNavbar';
-import { useAuthStore } from '../stores/authStore';
-import { useCartStore } from '../stores/cartStore';
-import { useThemeStore } from '../stores/themeStore';
-import { useCurrencyStore } from '../stores/currencyStore';
+import React from "react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { AppNavbar } from "./AppNavbar";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
 
-jest.mock('../stores/authStore');
-jest.mock('../stores/cartStore');
-jest.mock('../stores/themeStore');
-jest.mock('../stores/currencyStore');
+jest.mock("../store/hooks", () => ({
+  useAppDispatch: jest.fn(),
+  useAppSelector: jest.fn(),
+}));
 
-const mockLogout = jest.fn().mockResolvedValue(undefined);
+const mockDispatch = jest.fn().mockResolvedValue(undefined);
 
-const makeAuthState = (user: any) => {
-  (useAuthStore as jest.Mock).mockImplementation((selector: any) => {
-    const state = { user, logout: mockLogout };
-    return typeof selector === 'function' ? selector(state) : state;
-  });
-};
-
-const makeCartState = (itemCount: number) => {
-  (useCartStore as jest.Mock).mockImplementation((selector: any) => {
-    const state = { totals: { itemCount } };
-    return typeof selector === 'function' ? selector(state) : state;
-  });
-};
-
-const makeThemeState = () => {
-  (useThemeStore as jest.Mock).mockReturnValue({ theme: 'light', toggleTheme: jest.fn() });
-};
-
-const makeCurrencyState = () => {
-  (useCurrencyStore as jest.Mock).mockReturnValue({ currency: 'USD', setCurrency: jest.fn() });
+const makeState = (user: any, itemCount = 0) => {
+  (useAppDispatch as jest.Mock).mockReturnValue(mockDispatch);
+  (useAppSelector as jest.Mock).mockImplementation((selector: any) =>
+    selector({
+      auth: { user },
+      cart: { totals: { itemCount } },
+      theme: { theme: "light" },
+      currency: { currency: "USD" },
+    })
+  );
 };
 
 beforeEach(() => {
   jest.clearAllMocks();
-  makeCartState(0);
-  makeThemeState();
-  makeCurrencyState();
+  mockDispatch.mockResolvedValue(undefined);
+  makeState(null);
 });
 
-const wrap = (ui: React.ReactElement) =>
-  render(<MemoryRouter>{ui}</MemoryRouter>);
+const wrap = (ui: React.ReactElement) => render(<MemoryRouter>{ui}</MemoryRouter>);
 
-describe('AppNavbar — logged out', () => {
-  beforeEach(() => makeAuthState(null));
+describe("AppNavbar — logged out", () => {
+  beforeEach(() => makeState(null));
 
-  it('shows Login link', () => {
+  it("shows Login link", () => {
     wrap(<AppNavbar />);
-    expect(screen.getByRole('link', { name: 'Login' })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Login" })).toBeInTheDocument();
   });
 
-  it('shows Register link', () => {
+  it("shows Register link", () => {
     wrap(<AppNavbar />);
-    expect(screen.getByRole('link', { name: 'Register' })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Register" })).toBeInTheDocument();
   });
 
-  it('does not show user dropdown', () => {
+  it("does not show user dropdown", () => {
     wrap(<AppNavbar />);
     expect(screen.queryByText(/logout/i)).toBeNull();
   });
 });
 
-describe('AppNavbar — logged in as user', () => {
-  const user = { id: 'u1', name: 'Alice', email: 'a@a.com', role: 'user' as const };
+describe("AppNavbar — logged in as user", () => {
+  const user = { id: "u1", name: "Alice", email: "a@a.com", role: "user" as const };
 
-  beforeEach(() => makeAuthState(user));
+  beforeEach(() => makeState(user));
 
-  it('shows user name', () => {
+  it("shows user name", () => {
     wrap(<AppNavbar />);
-    expect(screen.getByText('Alice')).toBeInTheDocument();
+    expect(screen.getByText("Alice")).toBeInTheDocument();
   });
 
-  it('does not show Admin link for non-admin', () => {
+  it("does not show Admin link for non-admin", () => {
     wrap(<AppNavbar />);
-    expect(screen.queryByText('Admin')).toBeNull();
-  });
-});
-
-describe('AppNavbar — logged in as admin', () => {
-  const admin = { id: 'u2', name: 'Bob', email: 'b@b.com', role: 'admin' as const };
-
-  beforeEach(() => makeAuthState(admin));
-
-  it('shows Admin link', async () => {
-    wrap(<AppNavbar />);
-    // Open the dropdown to reveal items
-    fireEvent.click(screen.getByRole('button', { name: /bob/i }));
-    expect(await screen.findByText('Admin')).toBeInTheDocument();
+    expect(screen.queryByText("Admin")).toBeNull();
   });
 });
 
-describe('AppNavbar — cart badge', () => {
-  beforeEach(() => makeAuthState(null));
+describe("AppNavbar — logged in as admin", () => {
+  const admin = { id: "u2", name: "Bob", email: "b@b.com", role: "admin" as const };
 
-  it('shows item count in badge', () => {
-    makeCartState(3);
-    wrap(<AppNavbar />);
-    expect(screen.getByLabelText('3 items in cart')).toBeInTheDocument();
-  });
+  beforeEach(() => makeState(admin));
 
-  it('shows 0 when cart is empty', () => {
-    makeCartState(0);
+  it("shows Admin link", async () => {
     wrap(<AppNavbar />);
-    expect(screen.getByLabelText('0 items in cart')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /bob/i }));
+    expect(await screen.findByText("Admin")).toBeInTheDocument();
   });
 });
 
-describe('AppNavbar — logout', () => {
-  const user = { id: 'u1', name: 'Alice', email: 'a@a.com', role: 'user' as const };
+describe("AppNavbar — cart badge", () => {
+  beforeEach(() => makeState(null));
 
-  beforeEach(() => makeAuthState(user));
-
-  it('clicking Logout item calls logout()', async () => {
+  it("shows item count in badge", () => {
+    makeState(null, 3);
     wrap(<AppNavbar />);
-    // Open the dropdown toggle first
-    fireEvent.click(screen.getByRole('button', { name: /alice/i }));
+    expect(screen.getByLabelText("3 items in cart")).toBeInTheDocument();
+  });
+
+  it("shows 0 when cart is empty", () => {
+    makeState(null, 0);
+    wrap(<AppNavbar />);
+    expect(screen.getByLabelText("0 items in cart")).toBeInTheDocument();
+  });
+});
+
+describe("AppNavbar — logout", () => {
+  const user = { id: "u1", name: "Alice", email: "a@a.com", role: "user" as const };
+
+  beforeEach(() => makeState(user));
+
+  it("clicking Logout item dispatches logoutThunk", async () => {
+    wrap(<AppNavbar />);
+    fireEvent.click(screen.getByRole("button", { name: /alice/i }));
     const logoutItem = await screen.findByText(/logout/i);
     fireEvent.click(logoutItem);
     await waitFor(() => {
-      expect(mockLogout).toHaveBeenCalledTimes(1);
+      expect(mockDispatch).toHaveBeenCalledTimes(1);
     });
   });
 });
 
-describe('AppNavbar — theme toggle', () => {
-  beforeEach(() => makeAuthState(null));
+describe("AppNavbar — theme toggle", () => {
+  beforeEach(() => makeState(null));
 
-  it('shows theme toggle button', () => {
+  it("shows theme toggle button", () => {
     wrap(<AppNavbar />);
-    expect(screen.getByRole('button', { name: /switch to dark mode/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /switch to dark mode/i })).toBeInTheDocument();
   });
 });
 
-describe('AppNavbar — currency selector', () => {
-  beforeEach(() => makeAuthState(null));
+describe("AppNavbar — currency selector", () => {
+  beforeEach(() => makeState(null));
 
-  it('shows currency selector', () => {
+  it("shows currency selector", () => {
     wrap(<AppNavbar />);
-    expect(screen.getByRole('combobox', { name: /select currency/i })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: /select currency/i })).toBeInTheDocument();
   });
 });

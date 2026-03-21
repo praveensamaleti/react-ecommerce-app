@@ -7,26 +7,29 @@ import { LoadingSpinner } from "../components/LoadingSpinner";
 import { QuickViewModal } from "../components/QuickViewModal";
 import { LinkButton } from "../components/LinkButton";
 import type { Product } from "../types/domain";
-import { useProductsStore } from "../stores/productsStore";
-import { useCartStore } from "../stores/cartStore";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { loadProductsThunk } from "../store/slices/productsSlice";
+import { addToCart } from "../store/slices/cartSlice";
 import { useCartAutoTotals } from "../hooks/useCartAutoTotals";
 
 export const HomePage: React.FC = () => {
-  const { products, isLoading, error, loadProducts } = useProductsStore();
-  const addToCart = useCartStore((s) => s.addToCart);
+  const dispatch = useAppDispatch();
+  const products = useAppSelector((s) => s.products.products);
+  const isLoading = useAppSelector((s) => s.products.isLoading);
+  const error = useAppSelector((s) => s.products.error);
   useCartAutoTotals();
 
   const [quick, setQuick] = React.useState<Product | null>(null);
   const [showQuick, setShowQuick] = React.useState(false);
 
   React.useEffect(() => {
-    if (products.length === 0) loadProducts();
-  }, [products.length, loadProducts]);
+    if (products.length === 0) dispatch(loadProductsThunk());
+  }, [products.length, dispatch]);
 
   const featured = products.filter((p) => p.featured).slice(0, 8);
 
   const onAdd = (productId: string, qty = 1) => {
-    addToCart(productId, qty);
+    dispatch(addToCart({ productId, qty }));
     toast.success("Added to cart.");
   };
 
@@ -59,7 +62,7 @@ export const HomePage: React.FC = () => {
               <div className="fw-semibold">Fast highlights</div>
               <ul className="mt-3 mb-0">
                 <li>Search + filters + pagination</li>
-                <li>Zustand global state (cart/auth/products/orders)</li>
+                <li>Redux Toolkit global state (cart/auth/products/orders)</li>
                 <li>Live data from PostgreSQL + Redis cache</li>
               </ul>
             </div>
@@ -99,4 +102,3 @@ export const HomePage: React.FC = () => {
     </div>
   );
 };
-

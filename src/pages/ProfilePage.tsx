@@ -2,8 +2,9 @@ import React from "react";
 import { Button, Card, Col, Form, Row, Table } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
-import { useAuthStore } from "../stores/authStore";
-import { useOrdersStore } from "../stores/ordersStore";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { updateProfile } from "../store/slices/authSlice";
+import { loadOrdersForUserThunk } from "../store/slices/ordersSlice";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 
 type ProfileForm = {
@@ -12,13 +13,11 @@ type ProfileForm = {
 };
 
 export const ProfilePage: React.FC = () => {
-  const user = useAuthStore((s) => s.user);
-  const updateProfile = useAuthStore((s) => s.updateProfile);
-
-  const loadOrdersForUser = useOrdersStore((s) => s.loadOrdersForUser);
-  const orders = useOrdersStore((s) => s.orders);
-  const isLoading = useOrdersStore((s) => s.isLoading);
-  const error = useOrdersStore((s) => s.error);
+  const dispatch = useAppDispatch();
+  const user = useAppSelector((s) => s.auth.user);
+  const orders = useAppSelector((s) => s.orders.orders);
+  const isLoading = useAppSelector((s) => s.orders.isLoading);
+  const error = useAppSelector((s) => s.orders.error);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ProfileForm>({
     defaultValues: { name: user?.name || "", email: user?.email || "" }
@@ -29,13 +28,13 @@ export const ProfilePage: React.FC = () => {
   }, [user?.name, user?.email, reset]);
 
   React.useEffect(() => {
-    if (user) loadOrdersForUser(user.id);
-  }, [user, loadOrdersForUser]);
+    if (user) dispatch(loadOrdersForUserThunk(user.id));
+  }, [user, dispatch]);
 
   if (!user) return null;
 
   const onSubmit = (data: ProfileForm) => {
-    updateProfile({ name: data.name, email: data.email });
+    dispatch(updateProfile({ name: data.name, email: data.email }));
     toast.success("Profile updated.");
   };
 
@@ -119,4 +118,3 @@ export const ProfilePage: React.FC = () => {
     </Row>
   );
 };
-

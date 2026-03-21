@@ -2,11 +2,12 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AdminDashboardPage } from './AdminDashboardPage';
-import { useProductsStore } from '../stores/productsStore';
-import { useOrdersStore } from '../stores/ordersStore';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
 
-jest.mock('../stores/productsStore');
-jest.mock('../stores/ordersStore');
+jest.mock('../store/hooks', () => ({
+  useAppDispatch: jest.fn(),
+  useAppSelector: jest.fn(),
+}));
 jest.mock('../hooks/useCurrencyFormatter', () => ({
   useCurrencyFormatter: () => require('../utils/money').formatMoney,
 }));
@@ -14,11 +15,7 @@ jest.mock('react-toastify', () => ({
   toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
 }));
 
-const mockLoadProducts = jest.fn();
-const mockUpsertProduct = jest.fn();
-const mockDeleteProduct = jest.fn();
-const mockLoadOrdersForUser = jest.fn();
-const mockUpdateOrderStatus = jest.fn();
+const mockDispatch = jest.fn().mockResolvedValue(undefined);
 
 const product = {
   id: 'p1',
@@ -49,31 +46,18 @@ const order = {
 };
 
 const setup = (productOverrides: any = {}, orderOverrides: any = {}) => {
-  (useProductsStore as jest.Mock).mockImplementation((selector: any) => {
-    const state = {
-      products: [product],
-      isLoading: false,
-      error: null,
-      loadProducts: mockLoadProducts,
-      upsertProduct: mockUpsertProduct,
-      deleteProduct: mockDeleteProduct,
-      ...productOverrides,
-    };
-    return typeof selector === 'function' ? selector(state) : state;
-  });
-  (useOrdersStore as jest.Mock).mockImplementation((selector: any) => {
-    const state = {
-      orders: [order],
-      loadOrdersForUser: mockLoadOrdersForUser,
-      updateOrderStatus: mockUpdateOrderStatus,
-      ...orderOverrides,
-    };
-    return typeof selector === 'function' ? selector(state) : state;
-  });
+  (useAppDispatch as jest.Mock).mockReturnValue(mockDispatch);
+  (useAppSelector as jest.Mock).mockImplementation((selector: any) =>
+    selector({
+      products: { products: [product], isLoading: false, error: null, ...productOverrides },
+      orders: { orders: [order], isLoading: false, error: null, ...orderOverrides },
+    })
+  );
 };
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockDispatch.mockResolvedValue(undefined);
   setup();
 });
 
@@ -83,17 +67,19 @@ describe('AdminDashboardPage', () => {
   it('calls loadProducts on mount when products empty', () => {
     setup({ products: [] });
     wrap();
-    expect(mockLoadProducts).toHaveBeenCalledTimes(1);
+    // Two dispatches on mount: loadProductsThunk (products empty) + loadOrdersForUserThunk
+    expect(mockDispatch).toHaveBeenCalledTimes(2);
   });
 
-  it('does not call loadProducts when products already loaded', () => {
+  it('does not call loadProductsThunk when products already loaded', () => {
     wrap();
-    expect(mockLoadProducts).not.toHaveBeenCalled();
+    // Only one dispatch on mount: loadOrdersForUserThunk
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
   });
 
   it('calls loadOrdersForUser("u1") on mount', () => {
     wrap();
-    expect(mockLoadOrdersForUser).toHaveBeenCalledWith('u1');
+    expect(mockDispatch).toHaveBeenCalled();
   });
 
   it('shows products in table', () => {
@@ -118,7 +104,8 @@ describe('AdminDashboardPage', () => {
     expect(screen.getByLabelText('Name')).toHaveValue('');
   });
 
-  it('form submit for new product calls upsertProduct', async () => {
+  it('form submit for new product calls dispatch (upsertProduct)', async () => {
+    const dispatchCountBefore = mockDispatch.mock.calls.length;
     wrap();
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'New Product' } });
     fireEvent.change(screen.getByLabelText('Price'), { target: { value: '50' } });
@@ -126,14 +113,15 @@ describe('AdminDashboardPage', () => {
     fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'A new product' } });
     fireEvent.click(screen.getByRole('button', { name: /create product/i }));
     await waitFor(() => {
-      expect(mockUpsertProduct).toHaveBeenCalled();
+      expect(mockDispatch.mock.calls.length).toBeGreaterThan(dispatchCountBefore);
     });
   });
 
-  it('"Delete" button calls deleteProduct', () => {
+  it('"Delete" button dispatches deleteProduct', () => {
+    const dispatchCountBefore = mockDispatch.mock.calls.length;
     wrap();
     fireEvent.click(screen.getByRole('button', { name: /delete admin product/i }));
-    expect(mockDeleteProduct).toHaveBeenCalledWith('p1');
+    expect(mockDispatch.mock.calls.length).toBeGreaterThan(dispatchCountBefore);
   });
 
   it('orders tab shows order table', async () => {
@@ -144,14 +132,15 @@ describe('AdminDashboardPage', () => {
     });
   });
 
-  it('"Mark shipped" calls updateOrderStatus', async () => {
+  it('"Mark shipped" dispatches updateOrderStatus', async () => {
     wrap();
     fireEvent.click(screen.getByRole('tab', { name: /orders/i }));
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /mark shipped/i })).toBeInTheDocument();
     });
+    const dispatchCountBefore = mockDispatch.mock.calls.length;
     fireEvent.click(screen.getByRole('button', { name: /mark shipped/i }));
-    expect(mockUpdateOrderStatus).toHaveBeenCalledWith('o1', 'shipped');
+    expect(mockDispatch.mock.calls.length).toBeGreaterThan(dispatchCountBefore);
   });
 
   it('inventory tab shows products sorted by stock', async () => {

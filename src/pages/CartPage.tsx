@@ -7,24 +7,25 @@ import { LoadingSpinner } from "../components/LoadingSpinner";
 import { CartItemRow } from "../components/CartItemRow";
 import { LinkButton } from "../components/LinkButton";
 import { useCurrencyFormatter } from "../hooks/useCurrencyFormatter";
-import { useCartStore } from "../stores/cartStore";
-import { useProductsStore } from "../stores/productsStore";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { removeFromCart, setQty } from "../store/slices/cartSlice";
+import { loadProductsThunk } from "../store/slices/productsSlice";
 import { useCartAutoTotals } from "../hooks/useCartAutoTotals";
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
-  const items = useCartStore((s) => s.items);
-  const totals = useCartStore((s) => s.totals);
-  const removeFromCart = useCartStore((s) => s.removeFromCart);
-  const setQty = useCartStore((s) => s.setQty);
-
-  const { products, isLoading, error, loadProducts } = useProductsStore();
+  const dispatch = useAppDispatch();
+  const items = useAppSelector((s) => s.cart.items);
+  const totals = useAppSelector((s) => s.cart.totals);
+  const products = useAppSelector((s) => s.products.products);
+  const isLoading = useAppSelector((s) => s.products.isLoading);
+  const error = useAppSelector((s) => s.products.error);
   const fmt = useCurrencyFormatter();
   useCartAutoTotals();
 
   React.useEffect(() => {
-    if (products.length === 0) loadProducts();
-  }, [products.length, loadProducts]);
+    if (products.length === 0) dispatch(loadProductsThunk());
+  }, [products.length, dispatch]);
 
   if (isLoading && products.length === 0) return <LoadingSpinner label="Loading cart..." />;
   if (error) return <div className="alert alert-danger">{error}</div>;
@@ -55,9 +56,9 @@ export const CartPage: React.FC = () => {
               key={p.id}
               product={p}
               qty={it.qty}
-              onQtyChange={(q) => setQty(p.id, q)}
+              onQtyChange={(q) => dispatch(setQty({ productId: p.id, qty: q }))}
               onRemove={() => {
-                removeFromCart(p.id);
+                dispatch(removeFromCart(p.id));
                 toast.info("Removed from cart.");
               }}
             />
@@ -99,4 +100,3 @@ export const CartPage: React.FC = () => {
     </Row>
   );
 };
-

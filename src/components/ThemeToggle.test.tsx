@@ -1,14 +1,20 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ThemeToggle } from "./ThemeToggle";
-import { useThemeStore } from "../stores/themeStore";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
 
-jest.mock("../stores/themeStore");
+jest.mock("../store/hooks", () => ({
+  useAppDispatch: jest.fn(),
+  useAppSelector: jest.fn(),
+}));
 
-const mockToggleTheme = jest.fn();
+const mockDispatch = jest.fn();
 
 const setupStore = (theme: "light" | "dark") => {
-  (useThemeStore as jest.Mock).mockReturnValue({ theme, toggleTheme: mockToggleTheme });
+  (useAppDispatch as jest.Mock).mockReturnValue(mockDispatch);
+  (useAppSelector as jest.Mock).mockImplementation((selector: any) =>
+    selector({ theme: { theme } })
+  );
 };
 
 beforeEach(() => {
@@ -20,7 +26,6 @@ describe("ThemeToggle", () => {
   it("renders Moon icon in light mode", () => {
     setupStore("light");
     render(<ThemeToggle />);
-    // Moon icon is rendered as an SVG; button label indicates dark mode is the target
     expect(screen.getByRole("button", { name: /switch to dark mode/i })).toBeInTheDocument();
   });
 
@@ -36,10 +41,10 @@ describe("ThemeToggle", () => {
     expect(screen.getByLabelText(/switch to dark mode/i)).toBeInTheDocument();
   });
 
-  it("clicking button calls toggleTheme", () => {
+  it("clicking button dispatches toggleTheme", () => {
     setupStore("light");
     render(<ThemeToggle />);
     fireEvent.click(screen.getByRole("button"));
-    expect(mockToggleTheme).toHaveBeenCalledTimes(1);
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
   });
 });

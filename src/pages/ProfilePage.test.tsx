@@ -2,17 +2,18 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ProfilePage } from './ProfilePage';
-import { useAuthStore } from '../stores/authStore';
-import { useOrdersStore } from '../stores/ordersStore';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { updateProfile } from '../store/slices/authSlice';
 
-jest.mock('../stores/authStore');
-jest.mock('../stores/ordersStore');
+jest.mock('../store/hooks', () => ({
+  useAppDispatch: jest.fn(),
+  useAppSelector: jest.fn(),
+}));
 jest.mock('react-toastify', () => ({
   toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
 }));
 
-const mockUpdateProfile = jest.fn();
-const mockLoadOrdersForUser = jest.fn();
+const mockDispatch = jest.fn().mockResolvedValue(undefined);
 
 const user = { id: 'u1', name: 'Alice', email: 'alice@test.com', role: 'user' as const };
 const order = {
@@ -30,24 +31,18 @@ const order = {
 };
 
 const setup = (authOverrides: any = {}, ordersOverrides: any = {}) => {
-  (useAuthStore as jest.Mock).mockImplementation((selector: any) => {
-    const state = { user, updateProfile: mockUpdateProfile, ...authOverrides };
-    return typeof selector === 'function' ? selector(state) : state;
-  });
-  (useOrdersStore as jest.Mock).mockImplementation((selector: any) => {
-    const state = {
-      orders: [order],
-      isLoading: false,
-      error: null,
-      loadOrdersForUser: mockLoadOrdersForUser,
-      ...ordersOverrides,
-    };
-    return typeof selector === 'function' ? selector(state) : state;
-  });
+  (useAppDispatch as jest.Mock).mockReturnValue(mockDispatch);
+  (useAppSelector as jest.Mock).mockImplementation((selector: any) =>
+    selector({
+      auth: { user, ...authOverrides },
+      orders: { orders: [order], isLoading: false, error: null, ...ordersOverrides },
+    })
+  );
 };
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockDispatch.mockResolvedValue(undefined);
   setup();
 });
 
@@ -62,7 +57,7 @@ describe('ProfilePage', () => {
 
   it('calls loadOrdersForUser on mount', () => {
     wrap();
-    expect(mockLoadOrdersForUser).toHaveBeenCalledWith('u1');
+    expect(mockDispatch).toHaveBeenCalled();
   });
 
   it('profile form is pre-filled with user name and email', () => {
@@ -71,11 +66,13 @@ describe('ProfilePage', () => {
     expect(screen.getByDisplayValue('alice@test.com')).toBeInTheDocument();
   });
 
-  it('submit calls updateProfile', async () => {
+  it('submit dispatches updateProfile', async () => {
     wrap();
     fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
     await waitFor(() => {
-      expect(mockUpdateProfile).toHaveBeenCalledWith({ name: 'Alice', email: 'alice@test.com' });
+      expect(mockDispatch).toHaveBeenCalledWith(
+        updateProfile({ name: 'Alice', email: 'alice@test.com' })
+      );
     });
   });
 

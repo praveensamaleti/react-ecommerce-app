@@ -14,12 +14,11 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { AdminDashboardPage } from "./pages/AdminDashboardPage";
 import { OrderSuccessPage } from "./pages/OrderSuccessPage";
-import { useAuthStore } from "./stores/authStore";
-import { useThemeStore } from "./stores/themeStore";
+import { useAppSelector } from "./store/hooks";
 
 const App: React.FC = () => {
-  const { user } = useAuthStore();
-  const theme = useThemeStore((s) => s.theme);
+  const user = useAppSelector((s) => s.auth.user);
+  const theme = useAppSelector((s) => s.theme.theme);
 
   React.useEffect(() => {
     document.documentElement.setAttribute("data-bs-theme", theme);
@@ -91,4 +90,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-

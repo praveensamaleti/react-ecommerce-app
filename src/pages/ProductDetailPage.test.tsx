@@ -1,13 +1,15 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ProductDetailPage } from './ProductDetailPage';
-import { useProductsStore } from '../stores/productsStore';
-import { useCartStore } from '../stores/cartStore';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { addToCart } from '../store/slices/cartSlice';
 import { useCartAutoTotals } from '../hooks/useCartAutoTotals';
 
-jest.mock('../stores/productsStore');
-jest.mock('../stores/cartStore');
+jest.mock('../store/hooks', () => ({
+  useAppDispatch: jest.fn(),
+  useAppSelector: jest.fn(),
+}));
 jest.mock('../hooks/useCartAutoTotals');
 jest.mock('../hooks/useCurrencyFormatter', () => ({
   useCurrencyFormatter: () => require('../utils/money').formatMoney,
@@ -22,8 +24,7 @@ jest.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }));
 
-const mockLoadProducts = jest.fn();
-const mockAddToCart = jest.fn();
+const mockDispatch = jest.fn().mockResolvedValue(undefined);
 
 const product = {
   id: 'p1',
@@ -39,27 +40,21 @@ const product = {
   reviews: [{ id: 'r1', userName: 'Alice', rating: 5, title: 'Great!', body: 'Love it.', createdAt: '2024-01-01T00:00:00Z' }],
 };
 
-const makeProductsState = (overrides: any = {}) => {
-  (useProductsStore as jest.Mock).mockImplementation((selector: any) => {
-    const state = {
-      products: [product],
-      isLoading: false,
-      error: null,
-      loadProducts: mockLoadProducts,
-      ...overrides,
-    };
-    return typeof selector === 'function' ? selector(state) : state;
-  });
+const makeState = (overrides: any = {}) => {
+  (useAppDispatch as jest.Mock).mockReturnValue(mockDispatch);
+  (useAppSelector as jest.Mock).mockImplementation((selector: any) =>
+    selector({
+      products: { products: [product], isLoading: false, error: null, ...overrides },
+      cart: { items: [] },
+    })
+  );
 };
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockDispatch.mockResolvedValue(undefined);
   (useCartAutoTotals as jest.Mock).mockReturnValue(undefined);
-  makeProductsState();
-  (useCartStore as jest.Mock).mockImplementation((selector: any) => {
-    const state = { addToCart: mockAddToCart };
-    return typeof selector === 'function' ? selector(state) : state;
-  });
+  makeState();
 });
 
 const wrap = (productId = 'p1') =>
@@ -73,19 +68,19 @@ const wrap = (productId = 'p1') =>
 
 describe('ProductDetailPage', () => {
   it('shows LoadingSpinner when isLoading and no products', () => {
-    makeProductsState({ isLoading: true, products: [] });
+    makeState({ isLoading: true, products: [] });
     wrap();
     expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it('shows EmptyState "Product not found" when product not in list', () => {
-    makeProductsState({ products: [] });
+    makeState({ products: [] });
     wrap('unknown');
     expect(screen.getByText('Product not found')).toBeInTheDocument();
   });
 
   it('"Back to products" action navigates to /products', () => {
-    makeProductsState({ products: [] });
+    makeState({ products: [] });
     wrap('unknown');
     fireEvent.click(screen.getByRole('button', { name: /back to products/i }));
     expect(mockNavigate).toHaveBeenCalledWith('/products');
@@ -106,10 +101,10 @@ describe('ProductDetailPage', () => {
     expect(screen.getByText('A fancy gadget')).toBeInTheDocument();
   });
 
-  it('Add to cart button calls addToCart with clamped qty', () => {
+  it('Add to cart button dispatches addToCart with clamped qty', () => {
     wrap();
     fireEvent.click(screen.getByRole('button', { name: /add to cart/i }));
-    expect(mockAddToCart).toHaveBeenCalledWith('p1', 1);
+    expect(mockDispatch).toHaveBeenCalledWith(addToCart({ productId: 'p1', qty: 1 }));
   });
 
   it('shows review when product has reviews', () => {

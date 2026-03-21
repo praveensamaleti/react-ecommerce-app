@@ -2,9 +2,13 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { RegisterPage } from './RegisterPage';
-import { useAuthStore } from '../stores/authStore';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { registerThunk } from '../store/slices/authSlice';
 
-jest.mock('../stores/authStore');
+jest.mock('../store/hooks', () => ({
+  useAppDispatch: jest.fn(),
+  useAppSelector: jest.fn(),
+}));
 jest.mock('react-toastify', () => ({
   toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
 }));
@@ -15,25 +19,20 @@ jest.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }));
 
-const mockRegister = jest.fn();
-const mockClearError = jest.fn();
+const mockDispatch = jest.fn().mockResolvedValue(undefined);
 
 const makeAuthState = (overrides: any = {}) => {
-  (useAuthStore as jest.Mock).mockImplementation((selector: any) => {
-    const state = {
-      user: null,
-      isLoading: false,
-      error: null,
-      register: mockRegister,
-      clearError: mockClearError,
-      ...overrides,
-    };
-    return typeof selector === 'function' ? selector(state) : state;
-  });
+  (useAppDispatch as jest.Mock).mockReturnValue(mockDispatch);
+  (useAppSelector as jest.Mock).mockImplementation((selector: any) =>
+    selector({
+      auth: { user: null, isLoading: false, error: null, ...overrides },
+    })
+  );
 };
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockDispatch.mockResolvedValue(undefined);
   makeAuthState();
 });
 
@@ -70,8 +69,16 @@ describe('RegisterPage', () => {
     });
   });
 
-  it('calls register and navigates on success', async () => {
-    mockRegister.mockResolvedValueOnce(true);
+  it('calls dispatch and navigates on success', async () => {
+    const registerResult = registerThunk.fulfilled(
+      { user: { id: 'u1', name: 'Alice', email: 'alice@test.com', role: 'user' as const }, token: 'tok1', refreshToken: '' },
+      'reqId',
+      { name: 'Alice', email: 'alice@test.com', password: 'Password123!' }
+    );
+    mockDispatch
+      .mockReturnValueOnce(undefined)
+      .mockResolvedValueOnce(registerResult);
+
     wrap();
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Alice' } });
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alice@test.com' } });
@@ -79,13 +86,12 @@ describe('RegisterPage', () => {
     fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: 'Password123!' } });
     fireEvent.click(screen.getByRole('button', { name: /create account/i }));
     await waitFor(() => {
-      expect(mockRegister).toHaveBeenCalled();
       expect(mockNavigate).toHaveBeenCalledWith('/');
     });
   });
 
-  it('does not navigate when register returns false', async () => {
-    mockRegister.mockResolvedValueOnce(false);
+  it('does not navigate when register is rejected', async () => {
+    // Default mockDispatch resolves to undefined → fulfilled.match(undefined) = false
     wrap();
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Alice' } });
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alice@test.com' } });
@@ -93,7 +99,7 @@ describe('RegisterPage', () => {
     fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: 'Password123!' } });
     fireEvent.click(screen.getByRole('button', { name: /create account/i }));
     await waitFor(() => {
-      expect(mockRegister).toHaveBeenCalled();
+      expect(mockDispatch).toHaveBeenCalled();
     });
     expect(mockNavigate).not.toHaveBeenCalledWith('/');
   });

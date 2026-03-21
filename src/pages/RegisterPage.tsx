@@ -3,7 +3,8 @@ import { Button, Card, Form } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
-import { useAuthStore } from "../stores/authStore";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { clearError, registerThunk } from "../store/slices/authSlice";
 
 type RegisterForm = {
   name: string;
@@ -14,11 +15,10 @@ type RegisterForm = {
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const registerUser = useAuthStore((s) => s.register);
-  const isLoading = useAuthStore((s) => s.isLoading);
-  const error = useAuthStore((s) => s.error);
-  const clearError = useAuthStore((s) => s.clearError);
-  const user = useAuthStore((s) => s.user);
+  const dispatch = useAppDispatch();
+  const isLoading = useAppSelector((s) => s.auth.isLoading);
+  const error = useAppSelector((s) => s.auth.error);
+  const user = useAppSelector((s) => s.auth.user);
 
   const {
     register,
@@ -36,9 +36,11 @@ export const RegisterPage: React.FC = () => {
   const password = watch("password");
 
   const onSubmit = async (data: RegisterForm) => {
-    clearError();
-    const ok = await registerUser(data.name, data.email, data.password);
-    if (ok) {
+    dispatch(clearError());
+    const result = await dispatch(
+      registerThunk({ name: data.name, email: data.email, password: data.password })
+    );
+    if (registerThunk.fulfilled.match(result)) {
       toast.success("Account created!");
       navigate("/");
     } else {
@@ -143,4 +145,3 @@ export const RegisterPage: React.FC = () => {
     </div>
   );
 };
-

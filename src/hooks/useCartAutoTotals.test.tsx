@@ -1,12 +1,14 @@
 import { renderHook } from '@testing-library/react';
 import { useCartAutoTotals } from './useCartAutoTotals';
-import { useCartStore } from '../stores/cartStore';
-import { useProductsStore } from '../stores/productsStore';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { recomputeTotals } from '../store/slices/cartSlice';
 
-jest.mock('../stores/cartStore');
-jest.mock('../stores/productsStore');
+jest.mock('../store/hooks', () => ({
+  useAppDispatch: jest.fn(),
+  useAppSelector: jest.fn(),
+}));
 
-const mockRecomputeTotals = jest.fn();
+const mockDispatch = jest.fn();
 
 const mockProduct = {
   id: 'p1',
@@ -22,15 +24,14 @@ const mockProduct = {
   reviews: [],
 };
 
-const makeCartState = (items: any[], products: any[]) => {
-  (useCartStore as jest.Mock).mockImplementation((selector: any) => {
-    const state = { items, recomputeTotals: mockRecomputeTotals };
-    return typeof selector === 'function' ? selector(state) : state;
-  });
-  (useProductsStore as jest.Mock).mockImplementation((selector: any) => {
-    const state = { products };
-    return typeof selector === 'function' ? selector(state) : state;
-  });
+const makeState = (items: any[], products: any[]) => {
+  (useAppDispatch as jest.Mock).mockReturnValue(mockDispatch);
+  (useAppSelector as jest.Mock).mockImplementation((selector: any) =>
+    selector({
+      cart: { items },
+      products: { products },
+    })
+  );
 };
 
 beforeEach(() => {
@@ -39,35 +40,35 @@ beforeEach(() => {
 
 describe('useCartAutoTotals', () => {
   it('does NOT call recomputeTotals when products is empty', () => {
-    makeCartState([], []);
+    makeState([], []);
     renderHook(() => useCartAutoTotals());
-    expect(mockRecomputeTotals).not.toHaveBeenCalled();
+    expect(mockDispatch).not.toHaveBeenCalled();
   });
 
-  it('calls recomputeTotals with products when products is non-empty', () => {
-    makeCartState([], [mockProduct]);
+  it('dispatches recomputeTotals with products when products is non-empty', () => {
+    makeState([], [mockProduct]);
     renderHook(() => useCartAutoTotals());
-    expect(mockRecomputeTotals).toHaveBeenCalledWith([mockProduct]);
+    expect(mockDispatch).toHaveBeenCalledWith(recomputeTotals([mockProduct]));
   });
 
-  it('re-calls recomputeTotals when items change', () => {
-    makeCartState([], [mockProduct]);
+  it('re-dispatches recomputeTotals when items change', () => {
+    makeState([], [mockProduct]);
     const { rerender } = renderHook(() => useCartAutoTotals());
-    expect(mockRecomputeTotals).toHaveBeenCalledTimes(1);
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
 
-    makeCartState([{ productId: 'p1', qty: 1 }], [mockProduct]);
+    makeState([{ productId: 'p1', qty: 1 }], [mockProduct]);
     rerender();
-    expect(mockRecomputeTotals).toHaveBeenCalledTimes(2);
+    expect(mockDispatch).toHaveBeenCalledTimes(2);
   });
 
-  it('re-calls recomputeTotals when products change', () => {
-    makeCartState([], [mockProduct]);
+  it('re-dispatches recomputeTotals when products change', () => {
+    makeState([], [mockProduct]);
     const { rerender } = renderHook(() => useCartAutoTotals());
-    expect(mockRecomputeTotals).toHaveBeenCalledTimes(1);
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
 
     const newProduct = { ...mockProduct, id: 'p2' };
-    makeCartState([], [mockProduct, newProduct]);
+    makeState([], [mockProduct, newProduct]);
     rerender();
-    expect(mockRecomputeTotals).toHaveBeenCalledTimes(2);
+    expect(mockDispatch).toHaveBeenCalledTimes(2);
   });
 });

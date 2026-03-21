@@ -2,12 +2,14 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { CartPage } from './CartPage';
-import { useCartStore } from '../stores/cartStore';
-import { useProductsStore } from '../stores/productsStore';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { removeFromCart, setQty } from '../store/slices/cartSlice';
 import { useCartAutoTotals } from '../hooks/useCartAutoTotals';
 
-jest.mock('../stores/cartStore');
-jest.mock('../stores/productsStore');
+jest.mock('../store/hooks', () => ({
+  useAppDispatch: jest.fn(),
+  useAppSelector: jest.fn(),
+}));
 jest.mock('../hooks/useCartAutoTotals');
 jest.mock('../hooks/useCurrencyFormatter', () => ({
   useCurrencyFormatter: () => require('../utils/money').formatMoney,
@@ -22,9 +24,7 @@ jest.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }));
 
-const mockRemoveFromCart = jest.fn();
-const mockSetQty = jest.fn();
-const mockLoadProducts = jest.fn();
+const mockDispatch = jest.fn().mockResolvedValue(undefined);
 
 const product = {
   id: 'p1',
@@ -42,50 +42,34 @@ const product = {
 
 const totals = { subtotal: 50, discount: 5, tax: 3.6, total: 48.6, itemCount: 1 };
 
-const makeCartState = (overrides: any = {}) => {
-  (useCartStore as jest.Mock).mockImplementation((selector: any) => {
-    const state = {
-      items: [{ productId: 'p1', qty: 1 }],
-      totals,
-      removeFromCart: mockRemoveFromCart,
-      setQty: mockSetQty,
-      ...overrides,
-    };
-    return typeof selector === 'function' ? selector(state) : state;
-  });
-};
-
-const makeProductsState = (overrides: any = {}) => {
-  (useProductsStore as jest.Mock).mockImplementation((selector: any) => {
-    const state = {
-      products: [product],
-      isLoading: false,
-      error: null,
-      loadProducts: mockLoadProducts,
-      ...overrides,
-    };
-    return typeof selector === 'function' ? selector(state) : state;
-  });
+const makeState = (cartOverrides: any = {}, productOverrides: any = {}) => {
+  (useAppDispatch as jest.Mock).mockReturnValue(mockDispatch);
+  (useAppSelector as jest.Mock).mockImplementation((selector: any) =>
+    selector({
+      cart: { items: [{ productId: 'p1', qty: 1 }], totals, ...cartOverrides },
+      products: { products: [product], isLoading: false, error: null, ...productOverrides },
+    })
+  );
 };
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockDispatch.mockResolvedValue(undefined);
   (useCartAutoTotals as jest.Mock).mockReturnValue(undefined);
-  makeCartState();
-  makeProductsState();
+  makeState();
 });
 
 const wrap = () => render(<MemoryRouter><CartPage /></MemoryRouter>);
 
 describe('CartPage', () => {
   it('shows EmptyState when items=[]', () => {
-    makeCartState({ items: [] });
+    makeState({ items: [] });
     wrap();
     expect(screen.getByText('Your cart is empty')).toBeInTheDocument();
   });
 
   it('shows LoadingSpinner when isLoading and no products', () => {
-    makeProductsState({ isLoading: true, products: [] });
+    makeState({}, { isLoading: true, products: [] });
     wrap();
     expect(screen.getByRole('status')).toBeInTheDocument();
   });
@@ -95,16 +79,16 @@ describe('CartPage', () => {
     expect(screen.getByText('Cart Item')).toBeInTheDocument();
   });
 
-  it('remove button calls removeFromCart', () => {
+  it('remove button dispatches removeFromCart', () => {
     wrap();
     fireEvent.click(screen.getByRole('button', { name: /remove cart item from cart/i }));
-    expect(mockRemoveFromCart).toHaveBeenCalledWith('p1');
+    expect(mockDispatch).toHaveBeenCalledWith(removeFromCart('p1'));
   });
 
-  it('qty change calls setQty', () => {
+  it('qty change dispatches setQty', () => {
     wrap();
     fireEvent.change(screen.getByLabelText(/quantity for cart item/i), { target: { value: '3' } });
-    expect(mockSetQty).toHaveBeenCalledWith('p1', 3);
+    expect(mockDispatch).toHaveBeenCalledWith(setQty({ productId: 'p1', qty: 3 }));
   });
 
   it('shows subtotal in order summary', () => {

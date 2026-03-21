@@ -1,7 +1,7 @@
-import { useCurrencyStore } from "../stores/currencyStore";
+import { useAppSelector } from "../store/hooks";
 import { formatMoney } from "../utils/money";
 
 export function useCurrencyFormatter(): (value: number) => string {
-  const currency = useCurrencyStore((s) => s.currency);
+  const currency = useAppSelector((s) => s.currency.currency);
   return (value: number) => formatMoney(value, currency);
 }

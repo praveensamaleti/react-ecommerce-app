@@ -2,20 +2,20 @@ import React from "react";
 import { Badge, Container, Nav, Navbar, NavDropdown } from "react-bootstrap";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { ShoppingCart, User as UserIcon, LogOut, Shield } from "lucide-react";
-import { useAuthStore } from "../stores/authStore";
-import { useCartStore } from "../stores/cartStore";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { logoutThunk } from "../store/slices/authSlice";
 import { LinkButton } from "./LinkButton";
 import { ThemeToggle } from "./ThemeToggle";
 import { CurrencySelector } from "./CurrencySelector";
 
 export const AppNavbar: React.FC = () => {
   const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
-  const itemCount = useCartStore((s) => s.totals.itemCount);
+  const dispatch = useAppDispatch();
+  const user = useAppSelector((s) => s.auth.user);
+  const itemCount = useAppSelector((s) => s.cart.totals.itemCount);
 
   const onLogout = async () => {
-    await logout();
+    await dispatch(logoutThunk());
     navigate("/");
   };
 
@@ -93,4 +93,3 @@ export const AppNavbar: React.FC = () => {
     </Navbar>
   );
 };
-

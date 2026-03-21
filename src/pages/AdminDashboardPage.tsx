@@ -3,8 +3,16 @@ import { Button, Card, Col, Form, Row, Table, Tabs, Tab, Badge } from "react-boo
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import type { Category, Product } from "../types/domain";
-import { useProductsStore } from "../stores/productsStore";
-import { useOrdersStore } from "../stores/ordersStore";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  loadProductsThunk,
+  upsertProductThunk,
+  deleteProductThunk,
+} from "../store/slices/productsSlice";
+import {
+  loadOrdersForUserThunk,
+  updateOrderStatusThunk,
+} from "../store/slices/ordersSlice";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { useCurrencyFormatter } from "../hooks/useCurrencyFormatter";
 
@@ -21,10 +29,11 @@ type ProductForm = {
 const newId = () => `p${Math.floor(Math.random() * 90000) + 10000}`;
 
 export const AdminDashboardPage: React.FC = () => {
-  const { products, isLoading, error, loadProducts, upsertProduct, deleteProduct } = useProductsStore();
-  const orders = useOrdersStore((s) => s.orders);
-  const loadOrdersForUser = useOrdersStore((s) => s.loadOrdersForUser);
-  const updateOrderStatus = useOrdersStore((s) => s.updateOrderStatus);
+  const dispatch = useAppDispatch();
+  const products = useAppSelector((s) => s.products.products);
+  const isLoading = useAppSelector((s) => s.products.isLoading);
+  const error = useAppSelector((s) => s.products.error);
+  const orders = useAppSelector((s) => s.orders.orders);
 
   const fmt = useCurrencyFormatter();
   const [editing, setEditing] = React.useState<Product | null>(null);
@@ -41,13 +50,12 @@ export const AdminDashboardPage: React.FC = () => {
   });
 
   React.useEffect(() => {
-    if (products.length === 0) loadProducts();
-  }, [products.length, loadProducts]);
+    if (products.length === 0) dispatch(loadProductsThunk());
+  }, [products.length, dispatch]);
 
-  // For admin demo we load all orders by loading for the mock user id.
   React.useEffect(() => {
-    loadOrdersForUser("u1");
-  }, [loadOrdersForUser]);
+    dispatch(loadOrdersForUserThunk("u1"));
+  }, [dispatch]);
 
   const startEdit = (p: Product) => {
     setEditing(p);
@@ -94,7 +102,7 @@ export const AdminDashboardPage: React.FC = () => {
       featured: existing?.featured ?? false
     };
 
-    upsertProduct(next);
+    dispatch(upsertProductThunk(next));
     toast.success(editing ? "Product updated." : "Product created.");
     startNew();
   };
@@ -155,7 +163,7 @@ export const AdminDashboardPage: React.FC = () => {
                                 variant="outline-danger"
                                 size="sm"
                                 onClick={() => {
-                                  deleteProduct(p.id);
+                                  dispatch(deleteProductThunk(p.id));
                                   toast.info("Product deleted.");
                                 }}
                                 aria-label={`Delete ${p.name}`}
@@ -291,7 +299,7 @@ export const AdminDashboardPage: React.FC = () => {
                             size="sm"
                             variant="outline-success"
                             onClick={() => {
-                              updateOrderStatus(o.id, "shipped");
+                              dispatch(updateOrderStatusThunk({ orderId: o.id, status: "shipped" }));
                               toast.success("Order marked shipped.");
                             }}
                           >
@@ -348,4 +356,3 @@ export const AdminDashboardPage: React.FC = () => {
     </div>
   );
 };
-

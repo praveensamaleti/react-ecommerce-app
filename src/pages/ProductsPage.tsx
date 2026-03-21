@@ -15,33 +15,29 @@ import { LoadingSpinner } from "../components/LoadingSpinner";
 import { EmptyState } from "../components/EmptyState";
 import { QuickViewModal } from "../components/QuickViewModal";
 import type { Category, Product } from "../types/domain";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
 import {
-  selectFilteredProducts,
-  useProductsStore
-} from "../stores/productsStore";
-import { useCartStore } from "../stores/cartStore";
+  loadProductsThunk,
+  setFiltersQuery,
+  setFiltersCategory,
+  setFiltersPriceRange,
+  setFiltersPage,
+  setFiltersPageSize,
+  resetFilters,
+} from "../store/slices/productsSlice";
+import { addToCart } from "../store/slices/cartSlice";
 import { useDebounce } from "../hooks/useDebounce";
 import { useCartAutoTotals } from "../hooks/useCartAutoTotals";
 
 const categories: Array<Category | "All"> = ["All", "Electronics", "Clothing"];
 
 export const ProductsPage: React.FC = () => {
-  const {
-    products,
-    totalCount,
-    isLoading,
-    error,
-    filters,
-    loadProducts,
-    setQuery,
-    setCategory,
-    setPriceRange,
-    setPage,
-    setPageSize,
-    resetFilters
-  } = useProductsStore();
-
-  const addToCart = useCartStore((s) => s.addToCart);
+  const dispatch = useAppDispatch();
+  const products = useAppSelector((s) => s.products.products);
+  const totalCount = useAppSelector((s) => s.products.totalCount);
+  const isLoading = useAppSelector((s) => s.products.isLoading);
+  const error = useAppSelector((s) => s.products.error);
+  const filters = useAppSelector((s) => s.products.filters);
   useCartAutoTotals();
 
   const [searchInput, setSearchInput] = React.useState(filters.query);
@@ -52,23 +48,24 @@ export const ProductsPage: React.FC = () => {
   const [showQuick, setShowQuick] = React.useState(false);
 
   React.useEffect(() => {
-    if (products.length === 0) loadProducts();
-  }, [products.length, loadProducts]);
+    if (products.length === 0) dispatch(loadProductsThunk());
+  }, [products.length, dispatch]);
 
   React.useEffect(() => {
-    setQuery(debouncedSearch);
-  }, [debouncedSearch, setQuery]);
+    dispatch(setFiltersQuery(debouncedSearch));
+    dispatch(loadProductsThunk());
+  }, [debouncedSearch, dispatch]);
 
   React.useEffect(() => {
-    setPriceRange(0, debouncedPrice);
-  }, [debouncedPrice, setPriceRange]);
+    dispatch(setFiltersPriceRange({ minPrice: 0, maxPrice: debouncedPrice }));
+    dispatch(loadProductsThunk());
+  }, [debouncedPrice, dispatch]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / filters.pageSize));
-  const page = Math.min(filters.page, totalPages - 1);
   const pageItems = products;
 
   const onAdd = (id: string, qty = 1) => {
-    addToCart(id, qty);
+    dispatch(addToCart({ productId: id, qty }));
     toast.success("Added to cart.");
   };
 
@@ -87,7 +84,16 @@ export const ProductsPage: React.FC = () => {
           <Badge bg="light" text="dark" className="border">
             {totalCount} results
           </Badge>
-          <Button variant="outline-primary" size="sm" onClick={() => { resetFilters(); setPriceInput(PRICE_MAX); setSearchInput(""); }}>
+          <Button
+            variant="outline-primary"
+            size="sm"
+            onClick={() => {
+              dispatch(resetFilters());
+              dispatch(loadProductsThunk());
+              setPriceInput(PRICE_MAX);
+              setSearchInput("");
+            }}
+          >
             <SlidersHorizontal size={16} className="me-2" aria-hidden="true" />
             Reset
           </Button>
@@ -115,7 +121,10 @@ export const ProductsPage: React.FC = () => {
             <div className="fw-semibold mb-2">Category</div>
             <Form.Select
               value={filters.category}
-              onChange={(e) => setCategory(e.target.value as Category | "All")}
+              onChange={(e) => {
+                dispatch(setFiltersCategory(e.target.value as Category | "All"));
+                dispatch(loadProductsThunk());
+              }}
               aria-label="Filter by category"
             >
               {categories.map((c) => (
@@ -144,7 +153,10 @@ export const ProductsPage: React.FC = () => {
             <div className="fw-semibold mb-2">Page size</div>
             <Form.Select
               value={filters.pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
+              onChange={(e) => {
+                dispatch(setFiltersPageSize(Number(e.target.value)));
+                dispatch(loadProductsThunk());
+              }}
               aria-label="Page size"
             >
               {[8, 12, 16].map((n) => (
@@ -166,7 +178,8 @@ export const ProductsPage: React.FC = () => {
               description="Try adjusting your search or filters."
               actionLabel="Clear filters"
               onAction={() => {
-                resetFilters();
+                dispatch(resetFilters());
+                dispatch(loadProductsThunk());
                 setSearchInput("");
                 setPriceInput(PRICE_MAX);
               }}
@@ -189,7 +202,10 @@ export const ProductsPage: React.FC = () => {
             <div className="d-flex justify-content-center mt-4">
               <Pagination aria-label="Pagination">
                 <Pagination.Prev
-                  onClick={() => setPage(Math.max(0, filters.page - 1))}
+                  onClick={() => {
+                    dispatch(setFiltersPage(Math.max(0, filters.page - 1)));
+                    dispatch(loadProductsThunk());
+                  }}
                   disabled={filters.page === 0}
                 />
                 {Array.from({ length: totalPages }).slice(0, 7).map((_, i) => {
@@ -197,7 +213,10 @@ export const ProductsPage: React.FC = () => {
                     <Pagination.Item
                       key={i}
                       active={i === filters.page}
-                      onClick={() => setPage(i)}
+                      onClick={() => {
+                        dispatch(setFiltersPage(i));
+                        dispatch(loadProductsThunk());
+                      }}
                       aria-label={`Page ${i + 1}`}
                     >
                       {i + 1}
@@ -205,7 +224,10 @@ export const ProductsPage: React.FC = () => {
                   );
                 })}
                 <Pagination.Next
-                  onClick={() => setPage(Math.min(totalPages - 1, filters.page + 1))}
+                  onClick={() => {
+                    dispatch(setFiltersPage(Math.min(totalPages - 1, filters.page + 1)));
+                    dispatch(loadProductsThunk());
+                  }}
                   disabled={filters.page >= totalPages - 1}
                 />
               </Pagination>
@@ -226,4 +248,3 @@ export const ProductsPage: React.FC = () => {
     </div>
   );
 };
-

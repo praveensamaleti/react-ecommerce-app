@@ -1,6 +1,7 @@
 import React from "react";
 import { Form } from "react-bootstrap";
-import { useCurrencyStore } from "../stores/currencyStore";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { setCurrency } from "../store/slices/currencySlice";
 import type { CurrencyCode } from "../utils/money";
 
 const CURRENCIES = [
@@ -12,12 +13,13 @@ const CURRENCIES = [
 ];
 
 export const CurrencySelector: React.FC = () => {
-  const { currency, setCurrency } = useCurrencyStore();
+  const dispatch = useAppDispatch();
+  const currency = useAppSelector((s) => s.currency.currency);
   return (
     <Form.Select
       size="sm"
       value={currency}
-      onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
+      onChange={(e) => dispatch(setCurrency(e.target.value as CurrencyCode))}
       aria-label="Select currency"
       style={{ width: "auto" }}
     >

@@ -1,15 +1,14 @@
 import * as React from "react";
-import { useCartStore } from "../stores/cartStore";
-import { useProductsStore } from "../stores/productsStore";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { recomputeTotals } from "../store/slices/cartSlice";
 
 export function useCartAutoTotals() {
-  const items = useCartStore((s) => s.items);
-  const recomputeTotals = useCartStore((s) => s.recomputeTotals);
-  const products = useProductsStore((s) => s.products);
+  const dispatch = useAppDispatch();
+  const items = useAppSelector((s) => s.cart.items);
+  const products = useAppSelector((s) => s.products.products);
 
   React.useEffect(() => {
     if (products.length === 0) return;
-    recomputeTotals(products);
-  }, [items, products, recomputeTotals]);
+    dispatch(recomputeTotals(products));
+  }, [items, products, dispatch]);
 }
-

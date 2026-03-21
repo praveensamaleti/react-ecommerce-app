@@ -1,56 +1,42 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { useAuthStore } from './stores/authStore';
-import { useCartStore } from './stores/cartStore';
-import { useProductsStore } from './stores/productsStore';
-import { useOrdersStore } from './stores/ordersStore';
+import { useAppDispatch, useAppSelector } from './store/hooks';
 import { useCartAutoTotals } from './hooks/useCartAutoTotals';
-import { useThemeStore } from './stores/themeStore';
-import { useCurrencyStore } from './stores/currencyStore';
 import App from './App';
 
-// Mock all stores and hooks to prevent real API calls
-jest.mock('./stores/authStore');
-jest.mock('./stores/cartStore');
-jest.mock('./stores/productsStore');
-jest.mock('./stores/ordersStore');
+jest.mock('./store/hooks', () => ({
+  useAppDispatch: jest.fn(),
+  useAppSelector: jest.fn(),
+}));
 jest.mock('./hooks/useCartAutoTotals');
-jest.mock('./stores/themeStore');
-jest.mock('./stores/currencyStore');
 jest.mock('react-toastify', () => ({
   toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
   ToastContainer: () => null,
 }));
 
-const defaultProducts = { products: [], totalCount: 0, isLoading: false, error: null, loadProducts: jest.fn(), filters: { query: '', category: 'All', minPrice: 0, maxPrice: 1000, page: 0, pageSize: 8 }, setQuery: jest.fn(), setCategory: jest.fn(), setPriceRange: jest.fn(), setPage: jest.fn(), setPageSize: jest.fn(), resetFilters: jest.fn() };
-const defaultCart = { items: [], totals: { subtotal: 0, discount: 0, tax: 0, total: 0, itemCount: 0 }, addToCart: jest.fn(), removeFromCart: jest.fn(), setQty: jest.fn(), clearCart: jest.fn() };
-const defaultOrders = { orders: [], isLoading: false, error: null, loadOrdersForUser: jest.fn(), placeOrder: jest.fn(), updateOrderStatus: jest.fn() };
+const defaultFilters = { query: '', category: 'All', minPrice: 0, maxPrice: 1000, page: 0, pageSize: 8 };
+
+const mockDispatch = jest.fn().mockResolvedValue(undefined);
 
 const setupMocks = (user: any = null) => {
-  (useAuthStore as jest.Mock).mockImplementation((selector: any) => {
-    const state = { user, token: null, isLoading: false, error: null, login: jest.fn(), logout: jest.fn(), register: jest.fn(), updateProfile: jest.fn(), clearError: jest.fn() };
-    return typeof selector === 'function' ? selector(state) : state;
-  });
-  (useCartStore as jest.Mock).mockImplementation((selector: any) => {
-    return typeof selector === 'function' ? selector(defaultCart) : defaultCart;
-  });
-  (useProductsStore as jest.Mock).mockImplementation((selector: any) => {
-    return typeof selector === 'function' ? selector(defaultProducts) : defaultProducts;
-  });
-  (useOrdersStore as jest.Mock).mockImplementation((selector: any) => {
-    return typeof selector === 'function' ? selector(defaultOrders) : defaultOrders;
-  });
+  (useAppDispatch as jest.Mock).mockReturnValue(mockDispatch);
+  (useAppSelector as jest.Mock).mockImplementation((selector: any) =>
+    selector({
+      auth: { user, token: null, isLoading: false, error: null },
+      cart: { items: [], totals: { subtotal: 0, discount: 0, tax: 0, total: 0, itemCount: 0 } },
+      products: { products: [], totalCount: 0, isLoading: false, error: null, filters: defaultFilters },
+      orders: { orders: [], isLoading: false, error: null },
+      theme: { theme: 'light' },
+      currency: { currency: 'USD' },
+    })
+  );
   (useCartAutoTotals as jest.Mock).mockReturnValue(undefined);
-  (useThemeStore as jest.Mock).mockImplementation((selector: any) => {
-    const state = { theme: 'light', toggleTheme: jest.fn(), setTheme: jest.fn() };
-    return typeof selector === 'function' ? selector(state) : state;
-  });
-  (useCurrencyStore as jest.Mock).mockReturnValue({ currency: 'USD', setCurrency: jest.fn() });
 };
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockDispatch.mockResolvedValue(undefined);
   setupMocks();
 });
 
@@ -97,7 +83,6 @@ describe('App routing', () => {
   it('/admin with role=user redirects to /login', () => {
     const regularUser = { id: 'u1', name: 'Alice', email: 'a@a.com', role: 'user' };
     renderAt('/admin', regularUser);
-    // Non-admin is redirected away; admin dashboard must not appear
     expect(screen.queryByText('Admin Dashboard')).not.toBeInTheDocument();
   });
 

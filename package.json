@@ -33,6 +33,7 @@
     ]
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^2.11.2",
     "@types/node": "^22.10.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
@@ -43,12 +44,13 @@
     "react-bootstrap": "^2.10.6",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.0",
+    "react-redux": "^9.2.0",
     "react-router-dom": "^6.28.0",
     "react-scripts": "5.0.1",
     "react-slick": "^0.30.3",
     "react-toastify": "^10.0.5",
-    "slick-carousel": "^1.8.1",
-    "zustand": "^5.0.1"
+    "redux-persist": "^6.0.0",
+    "slick-carousel": "^1.8.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

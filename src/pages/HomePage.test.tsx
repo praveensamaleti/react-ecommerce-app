@@ -1,20 +1,21 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { HomePage } from './HomePage';
-import { useProductsStore } from '../stores/productsStore';
-import { useCartStore } from '../stores/cartStore';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { addToCart } from '../store/slices/cartSlice';
 import { useCartAutoTotals } from '../hooks/useCartAutoTotals';
 
-jest.mock('../stores/productsStore');
-jest.mock('../stores/cartStore');
+jest.mock('../store/hooks', () => ({
+  useAppDispatch: jest.fn(),
+  useAppSelector: jest.fn(),
+}));
 jest.mock('../hooks/useCartAutoTotals');
 jest.mock('react-toastify', () => ({
   toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
 }));
 
-const mockLoadProducts = jest.fn();
-const mockAddToCart = jest.fn();
+const mockDispatch = jest.fn().mockResolvedValue(undefined);
 
 const featuredProduct = {
   id: 'p1',
@@ -31,31 +32,22 @@ const featuredProduct = {
   featured: true,
 };
 
-const makeProductsState = (overrides: any = {}) => {
-  (useProductsStore as jest.Mock).mockImplementation((selector: any) => {
-    const state = {
-      products: [],
-      isLoading: false,
-      error: null,
-      loadProducts: mockLoadProducts,
-      ...overrides,
-    };
-    return typeof selector === 'function' ? selector(state) : state;
-  });
-};
-
-const makeCartState = () => {
-  (useCartStore as jest.Mock).mockImplementation((selector: any) => {
-    const state = { addToCart: mockAddToCart };
-    return typeof selector === 'function' ? selector(state) : state;
-  });
+const makeState = (overrides: any = {}) => {
+  (useAppDispatch as jest.Mock).mockReturnValue(mockDispatch);
+  (useAppSelector as jest.Mock).mockImplementation((selector: any) =>
+    selector({
+      products: { products: [], isLoading: false, error: null, ...overrides },
+      cart: { items: [] },
+      currency: { currency: 'USD' },
+    })
+  );
 };
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockDispatch.mockResolvedValue(undefined);
   (useCartAutoTotals as jest.Mock).mockReturnValue(undefined);
-  makeProductsState();
-  makeCartState();
+  makeState();
 });
 
 const wrap = () => render(<MemoryRouter><HomePage /></MemoryRouter>);
@@ -63,42 +55,42 @@ const wrap = () => render(<MemoryRouter><HomePage /></MemoryRouter>);
 describe('HomePage', () => {
   it('calls loadProducts on mount when products is empty', () => {
     wrap();
-    expect(mockLoadProducts).toHaveBeenCalledTimes(1);
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
   });
 
   it('does not call loadProducts when products already loaded', () => {
-    makeProductsState({ products: [featuredProduct] });
+    makeState({ products: [featuredProduct] });
     wrap();
-    expect(mockLoadProducts).not.toHaveBeenCalled();
+    expect(mockDispatch).not.toHaveBeenCalled();
   });
 
   it('shows LoadingSpinner when isLoading=true', () => {
-    makeProductsState({ isLoading: true });
+    makeState({ isLoading: true });
     wrap();
     expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it('shows error alert when error is set', () => {
-    makeProductsState({ error: 'Failed to load' });
+    makeState({ error: 'Failed to load' });
     wrap();
     expect(screen.getByText('Failed to load')).toBeInTheDocument();
   });
 
   it('renders featured products', () => {
-    makeProductsState({ products: [featuredProduct] });
+    makeState({ products: [featuredProduct] });
     wrap();
     expect(screen.getByText('Featured Widget')).toBeInTheDocument();
   });
 
-  it('clicking Add to cart calls addToCart', () => {
-    makeProductsState({ products: [featuredProduct] });
+  it('clicking Add to cart dispatches addToCart', () => {
+    makeState({ products: [featuredProduct] });
     wrap();
     fireEvent.click(screen.getByRole('button', { name: /add featured widget to cart/i }));
-    expect(mockAddToCart).toHaveBeenCalledWith('p1', 1);
+    expect(mockDispatch).toHaveBeenCalledWith(addToCart({ productId: 'p1', qty: 1 }));
   });
 
   it('quick view button opens QuickViewModal', () => {
-    makeProductsState({ products: [featuredProduct] });
+    makeState({ products: [featuredProduct] });
     wrap();
     fireEvent.click(screen.getByRole('button', { name: /quick view featured widget/i }));
     // Modal opens with the product name in it

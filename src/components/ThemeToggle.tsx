@@ -1,15 +1,17 @@
 import React from "react";
 import { Button } from "react-bootstrap";
 import { Sun, Moon } from "lucide-react";
-import { useThemeStore } from "../stores/themeStore";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { toggleTheme } from "../store/slices/themeSlice";
 
 export const ThemeToggle: React.FC = () => {
-  const { theme, toggleTheme } = useThemeStore();
+  const dispatch = useAppDispatch();
+  const theme = useAppSelector((s) => s.theme.theme);
   return (
     <Button
       variant={theme === "dark" ? "outline-light" : "outline-secondary"}
       size="sm"
-      onClick={toggleTheme}
+      onClick={() => dispatch(toggleTheme())}
       aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
       className="d-flex align-items-center"
     >
