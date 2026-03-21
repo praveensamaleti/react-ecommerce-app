@@ -6,6 +6,7 @@ import { useAuthStore } from "../stores/authStore";
 import { useCartStore } from "../stores/cartStore";
 import { LinkButton } from "./LinkButton";
 import { ThemeToggle } from "./ThemeToggle";
+import { CurrencySelector } from "./CurrencySelector";
 
 export const AppNavbar: React.FC = () => {
   const navigate = useNavigate();
@@ -37,6 +38,7 @@ export const AppNavbar: React.FC = () => {
 
           <Nav className="ms-auto align-items-lg-center gap-lg-2">
             <ThemeToggle />
+            <CurrencySelector />
             <Nav.Link as={NavLink} to="/cart" aria-label="Cart">
               <span className="d-inline-flex align-items-center gap-2">
                 <ShoppingCart size={18} aria-hidden="true" />

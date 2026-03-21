@@ -6,7 +6,7 @@ import type { Category, Product } from "../types/domain";
 import { useProductsStore } from "../stores/productsStore";
 import { useOrdersStore } from "../stores/ordersStore";
 import { LoadingSpinner } from "../components/LoadingSpinner";
-import { formatMoney } from "../utils/money";
+import { useCurrencyFormatter } from "../hooks/useCurrencyFormatter";
 
 type ProductForm = {
   id?: string;
@@ -26,6 +26,7 @@ export const AdminDashboardPage: React.FC = () => {
   const loadOrdersForUser = useOrdersStore((s) => s.loadOrdersForUser);
   const updateOrderStatus = useOrdersStore((s) => s.updateOrderStatus);
 
+  const fmt = useCurrencyFormatter();
   const [editing, setEditing] = React.useState<Product | null>(null);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ProductForm>({
@@ -139,7 +140,7 @@ export const AdminDashboardPage: React.FC = () => {
                         <tr key={p.id}>
                           <td className="fw-semibold">{p.name}</td>
                           <td>{p.category}</td>
-                          <td className="text-end">{formatMoney(p.price)}</td>
+                          <td className="text-end">{fmt(p.price)}</td>
                           <td className="text-end">
                             <Badge bg={p.stock <= 10 ? "warning" : "secondary"} text={p.stock <= 10 ? "dark" : undefined}>
                               {p.stock}

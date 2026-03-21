@@ -2,7 +2,7 @@ import React from "react";
 import { Button, Form, Image } from "react-bootstrap";
 import { Trash2 } from "lucide-react";
 import type { Product } from "../types/domain";
-import { formatMoney } from "../utils/money";
+import { useCurrencyFormatter } from "../hooks/useCurrencyFormatter";
 
 export const CartItemRow: React.FC<{
   product: Product;
@@ -10,6 +10,7 @@ export const CartItemRow: React.FC<{
   onQtyChange: (qty: number) => void;
   onRemove: () => void;
 }> = ({ product, qty, onQtyChange, onRemove }) => {
+  const fmt = useCurrencyFormatter();
   const lineTotal = product.price * qty;
   return (
     <div className="d-flex gap-3 py-3 border-bottom" aria-label={`Cart item ${product.name}`}>
@@ -25,7 +26,7 @@ export const CartItemRow: React.FC<{
         <div className="d-flex justify-content-between align-items-start gap-2">
           <div>
             <div className="fw-semibold">{product.name}</div>
-            <div className="text-muted small">{formatMoney(product.price)} each</div>
+            <div className="text-muted small">{fmt(product.price)} each</div>
           </div>
           <Button
             variant="outline-danger"
@@ -52,7 +53,7 @@ export const CartItemRow: React.FC<{
               aria-label={`Quantity for ${product.name}`}
             />
           </div>
-          <div className="fw-semibold">{formatMoney(lineTotal)}</div>
+          <div className="fw-semibold">{fmt(lineTotal)}</div>
         </div>
       </div>
     </div>

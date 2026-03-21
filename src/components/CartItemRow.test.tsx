@@ -3,6 +3,10 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { CartItemRow } from './CartItemRow';
 import type { Product } from '../types/domain';
 
+jest.mock('../hooks/useCurrencyFormatter', () => ({
+  useCurrencyFormatter: () => require('../utils/money').formatMoney,
+}));
+
 const product: Product = {
   id: 'p1',
   name: 'Blue Shirt',

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Button, Modal, Row, Col, Form } from "react-bootstrap";
 import type { Product } from "../types/domain";
 import { RatingStars } from "./RatingStars";
-import { formatMoney } from "../utils/money";
+import { useCurrencyFormatter } from "../hooks/useCurrencyFormatter";
 import { LinkButton } from "./LinkButton";
 
 export const QuickViewModal: React.FC<{
@@ -11,6 +11,7 @@ export const QuickViewModal: React.FC<{
   onHide: () => void;
   onAddToCart: (productId: string, qty: number) => void;
 }> = ({ product, show, onHide, onAddToCart }) => {
+  const fmt = useCurrencyFormatter();
   const [qty, setQty] = useState(1);
 
   const maxQty = useMemo(() => {
@@ -48,7 +49,7 @@ export const QuickViewModal: React.FC<{
           <Col md={6}>
             <div className="d-flex justify-content-between align-items-center">
               <div className="h4 m-0 text-primary">
-                {formatMoney(product.price)}
+                {fmt(product.price)}
               </div>
               <RatingStars
                 rating={product.rating}

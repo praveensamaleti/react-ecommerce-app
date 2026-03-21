@@ -6,7 +6,7 @@ import { EmptyState } from "../components/EmptyState";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { CartItemRow } from "../components/CartItemRow";
 import { LinkButton } from "../components/LinkButton";
-import { formatMoney } from "../utils/money";
+import { useCurrencyFormatter } from "../hooks/useCurrencyFormatter";
 import { useCartStore } from "../stores/cartStore";
 import { useProductsStore } from "../stores/productsStore";
 import { useCartAutoTotals } from "../hooks/useCartAutoTotals";
@@ -19,6 +19,7 @@ export const CartPage: React.FC = () => {
   const setQty = useCartStore((s) => s.setQty);
 
   const { products, isLoading, error, loadProducts } = useProductsStore();
+  const fmt = useCurrencyFormatter();
   useCartAutoTotals();
 
   React.useEffect(() => {
@@ -69,20 +70,20 @@ export const CartPage: React.FC = () => {
             <Card.Title>Order summary</Card.Title>
             <div className="d-flex justify-content-between mt-3">
               <span className="text-muted">Subtotal</span>
-              <span>{formatMoney(totals.subtotal)}</span>
+              <span>{fmt(totals.subtotal)}</span>
             </div>
             <div className="d-flex justify-content-between mt-2">
               <span className="text-muted">Discount (10%)</span>
-              <span>-{formatMoney(totals.discount)}</span>
+              <span>-{fmt(totals.discount)}</span>
             </div>
             <div className="d-flex justify-content-between mt-2">
               <span className="text-muted">Tax</span>
-              <span>{formatMoney(totals.tax)}</span>
+              <span>{fmt(totals.tax)}</span>
             </div>
             <hr />
             <div className="d-flex justify-content-between fw-semibold">
               <span>Total</span>
-              <span>{formatMoney(totals.total)}</span>
+              <span>{fmt(totals.total)}</span>
             </div>
             <div className="d-grid gap-2 mt-3">
               <LinkButton to="/checkout" variant="primary">

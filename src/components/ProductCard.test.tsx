@@ -4,6 +4,10 @@ import { MemoryRouter } from 'react-router-dom';
 import { ProductCard } from './ProductCard';
 import type { Product } from '../types/domain';
 
+jest.mock('../hooks/useCurrencyFormatter', () => ({
+  useCurrencyFormatter: () => require('../utils/money').formatMoney,
+}));
+
 const makeProduct = (overrides: Partial<Product> = {}): Product => ({
   id: 'p1',
   name: 'Test Widget',

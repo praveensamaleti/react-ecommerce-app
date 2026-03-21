@@ -15,7 +15,7 @@ import { EmptyState } from "../components/EmptyState";
 import { RatingStars } from "../components/RatingStars";
 import { useProductsStore } from "../stores/productsStore";
 import { useCartStore } from "../stores/cartStore";
-import { formatMoney } from "../utils/money";
+import { useCurrencyFormatter } from "../hooks/useCurrencyFormatter";
 import { useCartAutoTotals } from "../hooks/useCartAutoTotals";
 
 export const ProductDetailPage: React.FC = () => {
@@ -24,6 +24,7 @@ export const ProductDetailPage: React.FC = () => {
 
   const { products, isLoading, error, loadProducts } = useProductsStore();
   const addToCart = useCartStore((s) => s.addToCart);
+  const fmt = useCurrencyFormatter();
   useCartAutoTotals();
 
   const [qty, setQty] = React.useState(1);
@@ -99,7 +100,7 @@ export const ProductDetailPage: React.FC = () => {
             <div className="d-flex justify-content-between align-items-start gap-2">
               <div>
                 <div className="h4 text-primary mb-1">
-                  {formatMoney(product.price)}
+                  {fmt(product.price)}
                 </div>
                 <RatingStars
                   rating={product.rating}

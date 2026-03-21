@@ -4,6 +4,10 @@ import { MemoryRouter } from 'react-router-dom';
 import { QuickViewModal } from './QuickViewModal';
 import type { Product } from '../types/domain';
 
+jest.mock('../hooks/useCurrencyFormatter', () => ({
+  useCurrencyFormatter: () => require('../utils/money').formatMoney,
+}));
+
 const product: Product = {
   id: 'p1',
   name: 'Cool Gadget',

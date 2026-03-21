@@ -13,6 +13,9 @@ jest.mock('../stores/cartStore');
 jest.mock('../stores/productsStore');
 jest.mock('../stores/ordersStore');
 jest.mock('../hooks/useCartAutoTotals');
+jest.mock('../hooks/useCurrencyFormatter', () => ({
+  useCurrencyFormatter: () => require('../utils/money').formatMoney,
+}));
 jest.mock('react-toastify', () => ({
   toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
 }));

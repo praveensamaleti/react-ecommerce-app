@@ -5,10 +5,12 @@ import { AppNavbar } from './AppNavbar';
 import { useAuthStore } from '../stores/authStore';
 import { useCartStore } from '../stores/cartStore';
 import { useThemeStore } from '../stores/themeStore';
+import { useCurrencyStore } from '../stores/currencyStore';
 
 jest.mock('../stores/authStore');
 jest.mock('../stores/cartStore');
 jest.mock('../stores/themeStore');
+jest.mock('../stores/currencyStore');
 
 const mockLogout = jest.fn().mockResolvedValue(undefined);
 
@@ -30,10 +32,15 @@ const makeThemeState = () => {
   (useThemeStore as jest.Mock).mockReturnValue({ theme: 'light', toggleTheme: jest.fn() });
 };
 
+const makeCurrencyState = () => {
+  (useCurrencyStore as jest.Mock).mockReturnValue({ currency: 'USD', setCurrency: jest.fn() });
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
   makeCartState(0);
   makeThemeState();
+  makeCurrencyState();
 });
 
 const wrap = (ui: React.ReactElement) =>
@@ -126,5 +133,14 @@ describe('AppNavbar — theme toggle', () => {
   it('shows theme toggle button', () => {
     wrap(<AppNavbar />);
     expect(screen.getByRole('button', { name: /switch to dark mode/i })).toBeInTheDocument();
+  });
+});
+
+describe('AppNavbar — currency selector', () => {
+  beforeEach(() => makeAuthState(null));
+
+  it('shows currency selector', () => {
+    wrap(<AppNavbar />);
+    expect(screen.getByRole('combobox', { name: /select currency/i })).toBeInTheDocument();
   });
 });

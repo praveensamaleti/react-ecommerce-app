@@ -4,13 +4,14 @@ import { Link } from "react-router-dom";
 import { Eye, ShoppingCart } from "lucide-react";
 import type { Product } from "../types/domain";
 import { RatingStars } from "./RatingStars";
-import { formatMoney } from "../utils/money";
+import { useCurrencyFormatter } from "../hooks/useCurrencyFormatter";
 
 export const ProductCard: React.FC<{
   product: Product;
   onAddToCart: (productId: string) => void;
   onQuickView?: (product: Product) => void;
 }> = ({ product, onAddToCart, onQuickView }) => {
+  const fmt = useCurrencyFormatter();
   return (
     <Card className="h-100 card-hover shadow-sm" aria-label={product.name}>
       <Link to={`/products/${product.id}`} aria-label={`View ${product.name}`}>
@@ -29,7 +30,7 @@ export const ProductCard: React.FC<{
           ) : null}
         </div>
         <div className="d-flex align-items-center justify-content-between mt-2">
-          <div className="fw-bold text-primary">{formatMoney(product.price)}</div>
+          <div className="fw-bold text-primary">{fmt(product.price)}</div>
           <RatingStars rating={product.rating} count={product.ratingCount} />
         </div>
         <div className="mt-auto pt-3 d-flex gap-2">

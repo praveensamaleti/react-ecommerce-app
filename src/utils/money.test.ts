@@ -25,3 +25,17 @@ describe('formatMoney', () => {
     expect(formatMoney(9.999)).toBe('$10.00');
   });
 });
+
+describe('formatMoney — currency conversion', () => {
+  it('converts to EUR', () => {
+    expect(formatMoney(100, 'EUR')).toBe('€92.00');
+  });
+
+  it('converts to JPY (no decimal places)', () => {
+    expect(formatMoney(1, 'JPY')).toBe('¥149');
+  });
+
+  it('converts to INR', () => {
+    expect(formatMoney(10, 'INR')).toBe('₹835.00');
+  });
+});

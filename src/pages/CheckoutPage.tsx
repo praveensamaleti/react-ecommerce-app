@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import type { Address, Payment } from "../types/domain";
-import { formatMoney } from "../utils/money";
+import { useCurrencyFormatter } from "../hooks/useCurrencyFormatter";
 import { useAuthStore } from "../stores/authStore";
 import { useCartStore } from "../stores/cartStore";
 import { useProductsStore } from "../stores/productsStore";
@@ -28,6 +28,7 @@ export const CheckoutPage: React.FC = () => {
   const { products, isLoading: productsLoading, loadProducts } = useProductsStore();
   const placeOrder = useOrdersStore((s) => s.placeOrder);
   const ordersLoading = useOrdersStore((s) => s.isLoading);
+  const fmt = useCurrencyFormatter();
   useCartAutoTotals();
 
   React.useEffect(() => {
@@ -341,20 +342,20 @@ export const CheckoutPage: React.FC = () => {
             <Card.Title>Order summary</Card.Title>
             <div className="d-flex justify-content-between mt-3">
               <span className="text-muted">Subtotal</span>
-              <span>{formatMoney(totals.subtotal)}</span>
+              <span>{fmt(totals.subtotal)}</span>
             </div>
             <div className="d-flex justify-content-between mt-2">
               <span className="text-muted">Discount (10%)</span>
-              <span>-{formatMoney(totals.discount)}</span>
+              <span>-{fmt(totals.discount)}</span>
             </div>
             <div className="d-flex justify-content-between mt-2">
               <span className="text-muted">Tax</span>
-              <span>{formatMoney(totals.tax)}</span>
+              <span>{fmt(totals.tax)}</span>
             </div>
             <hr />
             <div className="d-flex justify-content-between fw-semibold">
               <span>Total</span>
-              <span>{formatMoney(totals.total)}</span>
+              <span>{fmt(totals.total)}</span>
             </div>
           </Card.Body>
         </Card>
