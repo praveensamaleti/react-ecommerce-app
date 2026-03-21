@@ -46,6 +46,8 @@ export const ProductsPage: React.FC = () => {
 
   const [searchInput, setSearchInput] = React.useState(filters.query);
   const debouncedSearch = useDebounce(searchInput, 250);
+  const [priceInput, setPriceInput] = React.useState(filters.maxPrice);
+  const debouncedPrice = useDebounce(priceInput, 400);
   const [quick, setQuick] = React.useState<Product | null>(null);
   const [showQuick, setShowQuick] = React.useState(false);
 
@@ -56,6 +58,10 @@ export const ProductsPage: React.FC = () => {
   React.useEffect(() => {
     setQuery(debouncedSearch);
   }, [debouncedSearch, setQuery]);
+
+  React.useEffect(() => {
+    setPriceRange(0, debouncedPrice);
+  }, [debouncedPrice, setPriceRange]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / filters.pageSize));
   const page = Math.min(filters.page, totalPages - 1);
@@ -81,7 +87,7 @@ export const ProductsPage: React.FC = () => {
           <Badge bg="light" text="dark" className="border">
             {totalCount} results
           </Badge>
-          <Button variant="outline-primary" size="sm" onClick={resetFilters}>
+          <Button variant="outline-primary" size="sm" onClick={() => { resetFilters(); setPriceInput(PRICE_MAX); setSearchInput(""); }}>
             <SlidersHorizontal size={16} className="me-2" aria-hidden="true" />
             Reset
           </Button>
@@ -123,13 +129,13 @@ export const ProductsPage: React.FC = () => {
 
             <div className="fw-semibold mb-2">Price range</div>
             <Form.Label className="small text-muted">
-              $0 – ${filters.maxPrice}
+              $0 – ${priceInput}
             </Form.Label>
             <Form.Range
               min={0}
               max={PRICE_MAX}
-              value={filters.maxPrice}
-              onChange={(e) => setPriceRange(0, Number(e.target.value))}
+              value={priceInput}
+              onChange={(e) => setPriceInput(Number(e.target.value))}
               aria-label="Max price"
             />
 
@@ -162,6 +168,7 @@ export const ProductsPage: React.FC = () => {
               onAction={() => {
                 resetFilters();
                 setSearchInput("");
+                setPriceInput(PRICE_MAX);
               }}
             />
           ) : null}
