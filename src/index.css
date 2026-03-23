@@ -109,6 +109,68 @@ a {
   background-clip: text;
 }
 
+/* ── Navbar controls ── */
+.navbar-cart-link {
+  padding: 0.3rem 0.45rem !important;
+  border-radius: 8px;
+}
+
+.navbar-cart-badge {
+  position: absolute;
+  top: -7px;
+  right: -9px;
+  font-size: 0.58rem;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navbar-user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: rgba(var(--ec-primary-rgb), 0.15);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.navbar-user-dropdown .dropdown-toggle {
+  border-radius: 20px !important;
+  padding: 0.28rem 0.65rem !important;
+  border: 1px solid var(--ec-navbar-border) !important;
+}
+
+.navbar-dropdown-icon {
+  opacity: 0.5;
+  flex-shrink: 0;
+  vertical-align: text-bottom;
+}
+
+.navbar-dropdown-logout {
+  color: #dc2626 !important;
+}
+
+.navbar-dropdown-logout:hover,
+.navbar-dropdown-logout:focus {
+  background-color: #fef2f2 !important;
+  color: #dc2626 !important;
+}
+
+[data-bs-theme="dark"] .navbar-dropdown-logout {
+  color: #f87171 !important;
+}
+
+[data-bs-theme="dark"] .navbar-dropdown-logout:hover,
+[data-bs-theme="dark"] .navbar-dropdown-logout:focus {
+  background-color: rgba(220, 38, 38, 0.12) !important;
+  color: #f87171 !important;
+}
+
 /* ── Product cards ── */
 .card-hover {
   transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),

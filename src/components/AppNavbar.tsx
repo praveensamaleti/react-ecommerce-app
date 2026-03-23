@@ -39,11 +39,10 @@ export const AppNavbar: React.FC = () => {
           <Nav className="ms-auto align-items-lg-center gap-lg-2">
             <ThemeToggle />
             <CurrencySelector />
-            <Nav.Link as={NavLink} to="/cart" aria-label="Cart">
-              <span className="d-inline-flex align-items-center gap-2">
+            <Nav.Link as={NavLink} to="/cart" aria-label="Cart" className="navbar-cart-link">
+              <span className="position-relative d-inline-flex align-items-center">
                 <ShoppingCart size={18} aria-hidden="true" />
-                Cart
-                <Badge bg="primary" pill aria-label={`${itemCount} items in cart`}>
+                <Badge bg="danger" pill className="navbar-cart-badge" aria-label={`${itemCount} items in cart`}>
                   {itemCount}
                 </Badge>
               </span>
@@ -51,9 +50,12 @@ export const AppNavbar: React.FC = () => {
 
             {user ? (
               <NavDropdown
+                className="navbar-user-dropdown"
                 title={
                   <span className="d-inline-flex align-items-center gap-2">
-                    <UserIcon size={18} aria-hidden="true" />
+                    <span className="navbar-user-avatar">
+                      <UserIcon size={13} aria-hidden="true" />
+                    </span>
                     {user.name}
                   </span>
                 }
@@ -61,20 +63,19 @@ export const AppNavbar: React.FC = () => {
                 align="end"
               >
                 <NavDropdown.Item as={Link} to="/profile">
+                  <UserIcon size={14} className="me-2 navbar-dropdown-icon" aria-hidden="true" />
                   Profile
                 </NavDropdown.Item>
                 {user.role === "admin" ? (
                   <NavDropdown.Item as={Link} to="/admin">
-                    <span className="d-inline-flex align-items-center gap-2">
-                      <Shield size={16} aria-hidden="true" /> Admin
-                    </span>
+                    <Shield size={14} className="me-2 navbar-dropdown-icon" aria-hidden="true" />
+                    Admin
                   </NavDropdown.Item>
                 ) : null}
                 <NavDropdown.Divider />
-                <NavDropdown.Item onClick={onLogout}>
-                  <span className="d-inline-flex align-items-center gap-2">
-                    <LogOut size={16} aria-hidden="true" /> Logout
-                  </span>
+                <NavDropdown.Item onClick={onLogout} className="navbar-dropdown-logout">
+                  <LogOut size={14} className="me-2 navbar-dropdown-icon" aria-hidden="true" />
+                  Logout
                 </NavDropdown.Item>
               </NavDropdown>
             ) : (
