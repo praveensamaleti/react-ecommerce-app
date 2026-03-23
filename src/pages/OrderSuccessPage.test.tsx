@@ -15,14 +15,14 @@ const wrap = (state?: any) =>
   );
 
 describe('OrderSuccessPage', () => {
-  it('renders "Success!" text', () => {
+  it('renders "Order confirmed!" text', () => {
     wrap();
-    expect(screen.getByText('Success!')).toBeInTheDocument();
+    expect(screen.getByText('Order confirmed!')).toBeInTheDocument();
   });
 
   it('shows order id when provided in location state', () => {
     wrap({ orderId: 'o99' });
-    expect(screen.getByText(/Order #o99/)).toBeInTheDocument();
+    expect(screen.getByText('#o99')).toBeInTheDocument();
   });
 
   it('does not show orderId text when location state is absent', () => {
@@ -35,8 +35,8 @@ describe('OrderSuccessPage', () => {
     expect(screen.getByRole('link', { name: 'Continue shopping' })).toHaveAttribute('href', '/products');
   });
 
-  it('"View profile" link goes to /profile', () => {
+  it('"View orders" link goes to /profile', () => {
     wrap();
-    expect(screen.getByRole('link', { name: 'View profile' })).toHaveAttribute('href', '/profile');
+    expect(screen.getByRole('link', { name: 'View orders' })).toHaveAttribute('href', '/profile');
   });
 });

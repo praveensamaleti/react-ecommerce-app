@@ -41,8 +41,8 @@ const wrap = () => render(<MemoryRouter><RegisterPage /></MemoryRouter>);
 describe('RegisterPage', () => {
   it('renders name, email, password, confirmPassword fields', () => {
     wrap();
-    expect(screen.getByLabelText('Name')).toBeInTheDocument();
-    expect(screen.getByLabelText('Email')).toBeInTheDocument();
+    expect(screen.getByLabelText('Full name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Email address')).toBeInTheDocument();
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
     expect(screen.getByLabelText('Confirm password')).toBeInTheDocument();
   });
@@ -59,8 +59,8 @@ describe('RegisterPage', () => {
 
   it('shows "Passwords do not match" for mismatched passwords', async () => {
     wrap();
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Alice' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alice@test.com' } });
+    fireEvent.change(screen.getByLabelText('Full name'), { target: { value: 'Alice' } });
+    fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'alice@test.com' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Password123!' } });
     fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: 'DifferentPass!' } });
     fireEvent.click(screen.getByRole('button', { name: /create account/i }));
@@ -80,8 +80,8 @@ describe('RegisterPage', () => {
       .mockResolvedValueOnce(registerResult);
 
     wrap();
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Alice' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alice@test.com' } });
+    fireEvent.change(screen.getByLabelText('Full name'), { target: { value: 'Alice' } });
+    fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'alice@test.com' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Password123!' } });
     fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: 'Password123!' } });
     fireEvent.click(screen.getByRole('button', { name: /create account/i }));
@@ -93,8 +93,8 @@ describe('RegisterPage', () => {
   it('does not navigate when register is rejected', async () => {
     // Default mockDispatch resolves to undefined → fulfilled.match(undefined) = false
     wrap();
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Alice' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alice@test.com' } });
+    fireEvent.change(screen.getByLabelText('Full name'), { target: { value: 'Alice' } });
+    fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'alice@test.com' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Password123!' } });
     fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: 'Password123!' } });
     fireEvent.click(screen.getByRole('button', { name: /create account/i }));

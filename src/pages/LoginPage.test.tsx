@@ -41,14 +41,14 @@ const wrap = () => render(<MemoryRouter><LoginPage /></MemoryRouter>);
 describe('LoginPage', () => {
   it('renders email and password fields and submit button', () => {
     wrap();
-    expect(screen.getByLabelText('Email')).toBeInTheDocument();
+    expect(screen.getByLabelText('Email address')).toBeInTheDocument();
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 
   it('shows validation errors when submitted empty', async () => {
     wrap();
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
     await waitFor(() => {
       expect(screen.getByText('Email is required')).toBeInTheDocument();
       expect(screen.getByText('Password is required')).toBeInTheDocument();
@@ -57,8 +57,8 @@ describe('LoginPage', () => {
 
   it('shows "Invalid email" for bad email format', async () => {
     wrap();
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'notanemail' } });
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'notanemail' } });
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
     await waitFor(() => {
       expect(screen.getByText('Invalid email')).toBeInTheDocument();
     });
@@ -75,9 +75,9 @@ describe('LoginPage', () => {
       .mockResolvedValueOnce(loginResult);
 
     wrap();
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'user@test.com' } });
+    fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'user@test.com' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } });
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/');
     });
@@ -86,9 +86,9 @@ describe('LoginPage', () => {
   it('does not navigate when login is rejected', async () => {
     // Default mockDispatch resolves to undefined → fulfilled.match(undefined) = false
     wrap();
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'user@test.com' } });
+    fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'user@test.com' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'wrong' } });
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
     await waitFor(() => {
       expect(mockDispatch).toHaveBeenCalled();
     });
