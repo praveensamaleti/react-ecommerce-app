@@ -5,8 +5,19 @@ import cartReducer, {
   setQty,
   clearCart,
   recomputeTotals,
+  loadCartThunk,
+  syncCartThunk,
 } from "./cartSlice";
+import * as cartApi from "../../utils/cartApi";
 import type { Product } from "../../types/domain";
+
+jest.mock("../../utils/cartApi", () => ({
+  fetchServerCart: jest.fn(),
+  syncServerCart: jest.fn(),
+}));
+
+const mockFetchServerCart = cartApi.fetchServerCart as jest.Mock;
+const mockSyncServerCart = cartApi.syncServerCart as jest.Mock;
 
 const makeProduct = (id: string, price: number, stock = 10): Product => ({
   id,
@@ -39,6 +50,7 @@ let store: ReturnType<typeof makeStore>;
 beforeEach(() => {
   store = makeStore();
   localStorage.clear();
+  jest.clearAllMocks();
 });
 
 describe("initial state", () => {
@@ -48,6 +60,10 @@ describe("initial state", () => {
 
   it("has all-zero totals", () => {
     expect(store.getState().cart.totals).toEqual(initialTotals);
+  });
+
+  it("has serverSynced=false", () => {
+    expect(store.getState().cart.serverSynced).toBe(false);
   });
 });
 
@@ -122,6 +138,13 @@ describe("clearCart", () => {
     expect(store.getState().cart.items).toHaveLength(0);
     expect(store.getState().cart.totals).toEqual(initialTotals);
   });
+
+  it("resets serverSynced to false", () => {
+    // Simulate synced state via loadCartThunk
+    mockFetchServerCart.mockResolvedValueOnce({ data: { items: [], hasOutOfStockItems: false } });
+    store.dispatch(clearCart());
+    expect(store.getState().cart.serverSynced).toBe(false);
+  });
 });
 
 describe("recomputeTotals", () => {
@@ -171,5 +194,76 @@ describe("recomputeTotals", () => {
     const totals2 = store.getState().cart.totals;
 
     expect(totals1).toBe(totals2);
+  });
+});
+
+describe("loadCartThunk", () => {
+  it("replaces items with server cart on success", async () => {
+    store.dispatch(addToCart({ productId: "p1", qty: 1 }));
+    mockFetchServerCart.mockResolvedValueOnce({
+      data: { items: [{ productId: "p2", qty: 3 }], hasOutOfStockItems: false },
+    });
+
+    await store.dispatch(loadCartThunk());
+
+    const { items, serverSynced } = store.getState().cart;
+    expect(items).toEqual([{ productId: "p2", qty: 3 }]);
+    expect(serverSynced).toBe(true);
+  });
+
+  it("sets serverSynced=true on success", async () => {
+    mockFetchServerCart.mockResolvedValueOnce({
+      data: { items: [], hasOutOfStockItems: false },
+    });
+
+    await store.dispatch(loadCartThunk());
+
+    expect(store.getState().cart.serverSynced).toBe(true);
+  });
+
+  it("does not update state on failure", async () => {
+    store.dispatch(addToCart({ productId: "p1", qty: 1 }));
+    mockFetchServerCart.mockRejectedValueOnce(new Error("Network error"));
+
+    await store.dispatch(loadCartThunk());
+
+    expect(store.getState().cart.items).toEqual([{ productId: "p1", qty: 1 }]);
+    expect(store.getState().cart.serverSynced).toBe(false);
+  });
+});
+
+describe("syncCartThunk", () => {
+  it("replaces items with merged server cart on success", async () => {
+    store.dispatch(addToCart({ productId: "p1", qty: 2 }));
+    mockSyncServerCart.mockResolvedValueOnce({
+      data: { items: [{ productId: "p1", qty: 2 }, { productId: "p2", qty: 1 }], hasOutOfStockItems: false },
+    });
+
+    await store.dispatch(syncCartThunk([{ productId: "p1", qty: 2 }]));
+
+    const { items, serverSynced } = store.getState().cart;
+    expect(items).toHaveLength(2);
+    expect(serverSynced).toBe(true);
+  });
+
+  it("sets serverSynced=true on success", async () => {
+    mockSyncServerCart.mockResolvedValueOnce({
+      data: { items: [], hasOutOfStockItems: false },
+    });
+
+    await store.dispatch(syncCartThunk([]));
+
+    expect(store.getState().cart.serverSynced).toBe(true);
+  });
+
+  it("passes local items to syncServerCart", async () => {
+    const localItems = [{ productId: "p1", qty: 3 }];
+    mockSyncServerCart.mockResolvedValueOnce({
+      data: { items: localItems, hasOutOfStockItems: false },
+    });
+
+    await store.dispatch(syncCartThunk(localItems));
+
+    expect(mockSyncServerCart).toHaveBeenCalledWith(localItems);
   });
 });

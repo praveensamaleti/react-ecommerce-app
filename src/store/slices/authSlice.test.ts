@@ -7,8 +7,10 @@ import authReducer, {
   registerThunk,
   logoutThunk,
 } from "./authSlice";
+import cartReducer from "./cartSlice";
 import { authLogoutMiddleware } from "../authLogoutMiddleware";
 import api from "../../utils/api";
+import * as cartApi from "../../utils/cartApi";
 
 jest.mock("../../utils/api", () => ({
   __esModule: true,
@@ -21,7 +23,14 @@ jest.mock("../../utils/api", () => ({
   },
 }));
 
+jest.mock("../../utils/cartApi", () => ({
+  fetchServerCart: jest.fn(),
+  syncServerCart: jest.fn(),
+}));
+
 const mockApi = api as jest.Mocked<typeof api>;
+const mockFetchServerCart = cartApi.fetchServerCart as jest.Mock;
+const mockSyncServerCart = cartApi.syncServerCart as jest.Mock;
 
 const mockUser = {
   id: "u1",
@@ -30,13 +39,15 @@ const mockUser = {
   role: "user" as const,
 };
 
+const emptyCartResponse = { data: { items: [], hasOutOfStockItems: false } };
+
 function makeStore() {
-  return configureStore({ reducer: { auth: authReducer } });
+  return configureStore({ reducer: { auth: authReducer, cart: cartReducer } });
 }
 
 function makeStoreWithMiddleware() {
   return configureStore({
-    reducer: { auth: authReducer },
+    reducer: { auth: authReducer, cart: cartReducer },
     middleware: (gDM) => gDM().concat(authLogoutMiddleware),
   });
 }
@@ -47,6 +58,8 @@ beforeEach(() => {
   store = makeStore();
   localStorage.clear();
   jest.clearAllMocks();
+  mockFetchServerCart.mockResolvedValue(emptyCartResponse);
+  mockSyncServerCart.mockResolvedValue(emptyCartResponse);
 });
 
 describe("initial state", () => {
@@ -117,6 +130,33 @@ describe("login", () => {
 
     expect(loginThunk.fulfilled.match(result)).toBe(true);
   });
+
+  it("loads server cart when local cart is empty on login", async () => {
+    mockApi.post.mockResolvedValueOnce({
+      data: { user: mockUser, token: "tok1", refreshToken: "ref1" },
+    });
+
+    await store.dispatch(loginThunk({ email: "alice@test.com", password: "pass" }));
+
+    expect(mockFetchServerCart).toHaveBeenCalledTimes(1);
+    expect(mockSyncServerCart).not.toHaveBeenCalled();
+  });
+
+  it("syncs local cart to server when local cart has items on login", async () => {
+    // Pre-populate local cart
+    store.dispatch({ type: "cart/addToCart", payload: { productId: "p1", qty: 2 } });
+    mockApi.post.mockResolvedValueOnce({
+      data: { user: mockUser, token: "tok1", refreshToken: "ref1" },
+    });
+    mockSyncServerCart.mockResolvedValueOnce({
+      data: { items: [{ productId: "p1", qty: 2 }], hasOutOfStockItems: false },
+    });
+
+    await store.dispatch(loginThunk({ email: "alice@test.com", password: "pass" }));
+
+    expect(mockSyncServerCart).toHaveBeenCalledTimes(1);
+    expect(mockFetchServerCart).not.toHaveBeenCalled();
+  });
 });
 
 describe("register", () => {
@@ -152,6 +192,18 @@ describe("register", () => {
     );
 
     expect(store.getState().auth.error).toBe("Registration failed.");
+  });
+
+  it("loads server cart when local cart is empty on register", async () => {
+    mockApi.post.mockResolvedValueOnce({
+      data: { user: mockUser, token: "tok2", refreshToken: "ref2" },
+    });
+
+    await store.dispatch(
+      registerThunk({ name: "Alice", email: "alice@test.com", password: "pass123" })
+    );
+
+    expect(mockFetchServerCart).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -190,6 +242,16 @@ describe("logout", () => {
     await store.dispatch(logoutThunk());
 
     expect(localStorage.getItem("token")).toBeNull();
+  });
+
+  it("clears cart items on logout", async () => {
+    store.dispatch({ type: "cart/addToCart", payload: { productId: "p1", qty: 1 } });
+    expect(store.getState().cart.items).toHaveLength(1);
+
+    mockApi.post.mockResolvedValueOnce({});
+    await store.dispatch(logoutThunk());
+
+    expect(store.getState().cart.items).toHaveLength(0);
   });
 });
 

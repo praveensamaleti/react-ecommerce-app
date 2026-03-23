@@ -100,4 +100,32 @@ describe('CartPage', () => {
     wrap();
     expect(screen.getByRole('link', { name: /proceed to checkout/i })).toBeInTheDocument();
   });
+
+  it('shows out-of-stock warning when product stock is 0', () => {
+    makeState({}, { products: [{ ...product, stock: 0 }] });
+    wrap();
+    expect(screen.getByText(/some items in your cart are out of stock/i)).toBeInTheDocument();
+  });
+
+  it('shows out-of-stock warning when qty exceeds available stock', () => {
+    makeState({ items: [{ productId: 'p1', qty: 5 }] }, { products: [{ ...product, stock: 2 }] });
+    wrap();
+    expect(screen.getByText(/some items in your cart are out of stock/i)).toBeInTheDocument();
+  });
+
+  it('does not show out-of-stock warning when stock is sufficient', () => {
+    wrap();
+    expect(screen.queryByText(/some items in your cart are out of stock/i)).not.toBeInTheDocument();
+  });
+
+  it('disables checkout link when hasOutOfStockItems', () => {
+    makeState({}, { products: [{ ...product, stock: 0 }] });
+    wrap();
+    expect(screen.getByRole('link', { name: /proceed to checkout/i })).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('checkout link is enabled when stock is sufficient', () => {
+    wrap();
+    expect(screen.getByRole('link', { name: /proceed to checkout/i })).not.toHaveAttribute('aria-disabled');
+  });
 });

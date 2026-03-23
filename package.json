@@ -29,7 +29,8 @@
       "!src/types/**",
       "!src/data/**",
       "!src/**/*.d.ts",
-      "!src/utils/api.ts"
+      "!src/utils/api.ts",
+      "!src/utils/cartApi.ts"
     ]
   },
   "dependencies": {

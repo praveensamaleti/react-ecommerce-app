@@ -65,4 +65,58 @@ describe('CartItemRow', () => {
     render(<CartItemRow product={product} qty={1} onQtyChange={jest.fn()} onRemove={jest.fn()} />);
     expect(screen.getByRole('generic', { name: `Cart item ${product.name}` })).toBeInTheDocument();
   });
+
+  it('shows Out of stock badge when outOfStock=true', () => {
+    render(
+      <CartItemRow
+        product={product}
+        qty={1}
+        onQtyChange={jest.fn()}
+        onRemove={jest.fn()}
+        outOfStock={true}
+      />
+    );
+    expect(screen.getByText('Out of stock')).toBeInTheDocument();
+  });
+
+  it('does not show Out of stock badge when outOfStock=false', () => {
+    render(<CartItemRow product={product} qty={1} onQtyChange={jest.fn()} onRemove={jest.fn()} outOfStock={false} />);
+    expect(screen.queryByText('Out of stock')).not.toBeInTheDocument();
+  });
+
+  it('shows insufficient stock badge when qty exceeds availableStock and not outOfStock', () => {
+    render(
+      <CartItemRow
+        product={product}
+        qty={5}
+        onQtyChange={jest.fn()}
+        onRemove={jest.fn()}
+        outOfStock={false}
+        insufficientStock={true}
+        availableStock={3}
+      />
+    );
+    expect(screen.getByText('Only 3 available')).toBeInTheDocument();
+  });
+
+  it('does not show insufficient stock badge when outOfStock=true', () => {
+    render(
+      <CartItemRow
+        product={product}
+        qty={5}
+        onQtyChange={jest.fn()}
+        onRemove={jest.fn()}
+        outOfStock={true}
+        insufficientStock={true}
+        availableStock={0}
+      />
+    );
+    expect(screen.queryByText(/only/i)).not.toBeInTheDocument();
+  });
+
+  it('shows no stock badges by default', () => {
+    render(<CartItemRow product={product} qty={1} onQtyChange={jest.fn()} onRemove={jest.fn()} />);
+    expect(screen.queryByText('Out of stock')).not.toBeInTheDocument();
+    expect(screen.queryByText(/only/i)).not.toBeInTheDocument();
+  });
 });
