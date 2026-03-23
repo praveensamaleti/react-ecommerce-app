@@ -1,4 +1,6 @@
-export type Category = "Electronics" | "Clothing";
+export type Category = string;
+
+export const FALLBACK_CATEGORIES: string[] = ["Electronics", "Clothing", "Home", "Books", "Sports"];
 
 export type Review = {
   id: string;

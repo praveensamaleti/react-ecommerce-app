@@ -17,6 +17,7 @@ type ProductsState = {
   isLoading: boolean;
   error: string | null;
   filters: ProductsFilters;
+  categories: string[];
 };
 
 export const DEFAULT_FILTERS: ProductsFilters = {
@@ -34,7 +35,22 @@ const initialState: ProductsState = {
   isLoading: false,
   error: null,
   filters: { ...DEFAULT_FILTERS },
+  categories: [],
 };
+
+export const loadCategoriesThunk = createAsyncThunk(
+  "products/loadCategories",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get("/api/products/categories");
+      return response.data as string[];
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to load categories."
+      );
+    }
+  }
+);
 
 export const loadProductsThunk = createAsyncThunk(
   "products/load",
@@ -166,6 +182,9 @@ const productsSlice = createSlice({
       .addCase(deleteProductThunk.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
+      })
+      .addCase(loadCategoriesThunk.fulfilled, (state, action) => {
+        state.categories = action.payload;
       });
   },
 });
@@ -182,5 +201,9 @@ export const {
 export const selectFilteredProducts = (state: {
   products: ProductsState;
 }): Product[] => state.products.products;
+
+export const selectCategories = (state: {
+  products: ProductsState;
+}): string[] => state.products.categories;
 
 export default productsSlice.reducer;

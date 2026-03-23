@@ -14,22 +14,22 @@ import { ProductCard } from "../components/ProductCard";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { EmptyState } from "../components/EmptyState";
 import { QuickViewModal } from "../components/QuickViewModal";
-import type { Category, Product } from "../types/domain";
+import type { Product } from "../types/domain";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import {
   loadProductsThunk,
+  loadCategoriesThunk,
   setFiltersQuery,
   setFiltersCategory,
   setFiltersPriceRange,
   setFiltersPage,
   setFiltersPageSize,
   resetFilters,
+  selectCategories,
 } from "../store/slices/productsSlice";
-import { addToCartThunk } from "../store/slices/cartSlice";
+import { addToCartThunk, removeFromCartThunk, setQtyThunk } from "../store/slices/cartSlice";
 import { useDebounce } from "../hooks/useDebounce";
 import { useCartAutoTotals } from "../hooks/useCartAutoTotals";
-
-const categories: Array<Category | "All"> = ["All", "Electronics", "Clothing"];
 
 export const ProductsPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -38,7 +38,14 @@ export const ProductsPage: React.FC = () => {
   const isLoading = useAppSelector((s) => s.products.isLoading);
   const error = useAppSelector((s) => s.products.error);
   const filters = useAppSelector((s) => s.products.filters);
+  const categories = useAppSelector(selectCategories);
+  const cartItems = useAppSelector((s) => s.cart.items);
   useCartAutoTotals();
+
+  const cartMap = React.useMemo(
+    () => new Map(cartItems.map((i) => [i.productId, i.qty])),
+    [cartItems]
+  );
 
   const [searchInput, setSearchInput] = React.useState(filters.query);
   const debouncedSearch = useDebounce(searchInput, 250);
@@ -50,6 +57,10 @@ export const ProductsPage: React.FC = () => {
   React.useEffect(() => {
     if (products.length === 0) dispatch(loadProductsThunk());
   }, [products.length, dispatch]);
+
+  React.useEffect(() => {
+    if (categories.length === 0) dispatch(loadCategoriesThunk());
+  }, [categories.length, dispatch]);
 
   React.useEffect(() => {
     dispatch(setFiltersQuery(debouncedSearch));
@@ -67,6 +78,14 @@ export const ProductsPage: React.FC = () => {
   const onAdd = (id: string, qty = 1) => {
     dispatch(addToCartThunk({ productId: id, qty }));
     toast.success("Added to cart.");
+  };
+
+  const onRemove = (id: string) => {
+    dispatch(removeFromCartThunk(id));
+  };
+
+  const onQty = (id: string, qty: number) => {
+    dispatch(setQtyThunk({ productId: id, qty }));
   };
 
   const onQuick = (p: Product) => {
@@ -122,12 +141,12 @@ export const ProductsPage: React.FC = () => {
             <Form.Select
               value={filters.category}
               onChange={(e) => {
-                dispatch(setFiltersCategory(e.target.value as Category | "All"));
+                dispatch(setFiltersCategory(e.target.value));
                 dispatch(loadProductsThunk());
               }}
               aria-label="Filter by category"
             >
-              {categories.map((c) => (
+              {["All", ...categories].map((c) => (
                 <option key={c} value={c}>
                   {c}
                 </option>
@@ -191,7 +210,10 @@ export const ProductsPage: React.FC = () => {
               <Col key={p.id} xs={12} sm={6} xl={4}>
                 <ProductCard
                   product={p}
+                  cartQty={cartMap.get(p.id) ?? 0}
                   onAddToCart={(id) => onAdd(id)}
+                  onRemoveFromCart={onRemove}
+                  onQtyChange={onQty}
                   onQuickView={onQuick}
                 />
               </Col>

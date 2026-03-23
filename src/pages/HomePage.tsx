@@ -9,7 +9,7 @@ import { LinkButton } from "../components/LinkButton";
 import type { Product } from "../types/domain";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { loadProductsThunk } from "../store/slices/productsSlice";
-import { addToCart } from "../store/slices/cartSlice";
+import { addToCartThunk, removeFromCartThunk, setQtyThunk } from "../store/slices/cartSlice";
 import { useCartAutoTotals } from "../hooks/useCartAutoTotals";
 
 export const HomePage: React.FC = () => {
@@ -17,7 +17,13 @@ export const HomePage: React.FC = () => {
   const products = useAppSelector((s) => s.products.products);
   const isLoading = useAppSelector((s) => s.products.isLoading);
   const error = useAppSelector((s) => s.products.error);
+  const cartItems = useAppSelector((s) => s.cart.items);
   useCartAutoTotals();
+
+  const cartMap = React.useMemo(
+    () => new Map(cartItems.map((i) => [i.productId, i.qty])),
+    [cartItems]
+  );
 
   const [quick, setQuick] = React.useState<Product | null>(null);
   const [showQuick, setShowQuick] = React.useState(false);
@@ -29,8 +35,16 @@ export const HomePage: React.FC = () => {
   const featured = products.filter((p) => p.featured).slice(0, 8);
 
   const onAdd = (productId: string, qty = 1) => {
-    dispatch(addToCart({ productId, qty }));
+    dispatch(addToCartThunk({ productId, qty }));
     toast.success("Added to cart.");
+  };
+
+  const onRemove = (productId: string) => {
+    dispatch(removeFromCartThunk(productId));
+  };
+
+  const onQty = (productId: string, qty: number) => {
+    dispatch(setQtyThunk({ productId, qty }));
   };
 
   const onQuick = (p: Product) => {
@@ -84,7 +98,14 @@ export const HomePage: React.FC = () => {
         <Row className="g-3 mt-1">
           {featured.map((p) => (
             <Col key={p.id} xs={12} sm={6} md={4} lg={3}>
-              <ProductCard product={p} onAddToCart={(id) => onAdd(id)} onQuickView={onQuick} />
+              <ProductCard
+                product={p}
+                cartQty={cartMap.get(p.id) ?? 0}
+                onAddToCart={(id) => onAdd(id)}
+                onRemoveFromCart={onRemove}
+                onQtyChange={onQty}
+                onQuickView={onQuick}
+              />
             </Col>
           ))}
         </Row>

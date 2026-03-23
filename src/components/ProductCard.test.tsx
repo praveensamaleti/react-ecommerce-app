@@ -87,4 +87,33 @@ describe('ProductCard', () => {
     wrap(<ProductCard product={makeProduct()} onAddToCart={jest.fn()} />);
     expect(screen.queryByRole('button', { name: /quick view/i })).toBeNull();
   });
+
+  it('shows qty counter when cartQty > 0', () => {
+    wrap(<ProductCard product={makeProduct()} onAddToCart={jest.fn()} cartQty={3} />);
+    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /decrease quantity/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /increase quantity/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /add test widget to cart/i })).toBeNull();
+  });
+
+  it('+ button calls onQtyChange with qty+1', () => {
+    const onQtyChange = jest.fn();
+    wrap(<ProductCard product={makeProduct()} onAddToCart={jest.fn()} cartQty={2} onQtyChange={onQtyChange} />);
+    fireEvent.click(screen.getByRole('button', { name: /increase quantity/i }));
+    expect(onQtyChange).toHaveBeenCalledWith('p1', 3);
+  });
+
+  it('- button calls onQtyChange with qty-1 when qty > 1', () => {
+    const onQtyChange = jest.fn();
+    wrap(<ProductCard product={makeProduct()} onAddToCart={jest.fn()} cartQty={3} onQtyChange={onQtyChange} />);
+    fireEvent.click(screen.getByRole('button', { name: /decrease quantity/i }));
+    expect(onQtyChange).toHaveBeenCalledWith('p1', 2);
+  });
+
+  it('- button calls onRemoveFromCart when qty === 1', () => {
+    const onRemoveFromCart = jest.fn();
+    wrap(<ProductCard product={makeProduct()} onAddToCart={jest.fn()} cartQty={1} onRemoveFromCart={onRemoveFromCart} />);
+    fireEvent.click(screen.getByRole('button', { name: /decrease quantity/i }));
+    expect(onRemoveFromCart).toHaveBeenCalledWith('p1');
+  });
 });

@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import productsReducer, {
   loadProductsThunk,
+  loadCategoriesThunk,
   upsertProductThunk,
   deleteProductThunk,
   setFiltersQuery,
@@ -10,6 +11,7 @@ import productsReducer, {
   setFiltersPageSize,
   resetFilters,
   selectFilteredProducts,
+  selectCategories,
   DEFAULT_FILTERS,
 } from "./productsSlice";
 import api from "../../utils/api";
@@ -212,5 +214,39 @@ describe("selectFilteredProducts", () => {
     });
     const state = store.getState();
     expect(selectFilteredProducts(state)).toBe(state.products.products);
+  });
+});
+
+describe("loadCategories", () => {
+  it("success sets categories", async () => {
+    mockApi.get.mockResolvedValueOnce({
+      data: ["Electronics", "Clothing", "Home", "Books", "Sports"],
+    });
+
+    await store.dispatch(loadCategoriesThunk());
+
+    const s = store.getState().products;
+    expect(s.categories).toEqual(["Electronics", "Clothing", "Home", "Books", "Sports"]);
+  });
+
+  it("failure does not change categories", async () => {
+    mockApi.get.mockRejectedValueOnce({
+      response: { data: { message: "Server error" } },
+    });
+
+    await store.dispatch(loadCategoriesThunk());
+
+    expect(store.getState().products.categories).toEqual([]);
+  });
+});
+
+describe("selectCategories", () => {
+  it("returns state.products.categories", () => {
+    store.dispatch({
+      type: "products/loadCategories/fulfilled",
+      payload: ["Electronics", "Clothing"],
+    });
+    const state = store.getState();
+    expect(selectCategories(state)).toEqual(["Electronics", "Clothing"]);
   });
 });

@@ -9,6 +9,7 @@ import {
   setFiltersPage,
   resetFilters,
 } from '../store/slices/productsSlice';
+import { removeFromCartThunk, setQtyThunk } from '../store/slices/cartSlice';
 import { useCartAutoTotals } from '../hooks/useCartAutoTotals';
 
 jest.mock('../store/hooks', () => ({
@@ -56,6 +57,7 @@ const makeState = (overrides: any = {}) => {
         isLoading: false,
         error: null,
         filters: defaultFilters,
+        categories: [],
         ...overrides,
       },
       cart: { items: [] },
@@ -150,5 +152,25 @@ describe('ProductsPage', () => {
     const nextItem = container.querySelector('.pagination .page-item:last-child');
     fireEvent.click(nextItem!.querySelector('a')!);
     expect(mockDispatch).toHaveBeenCalledWith(setFiltersPage(1));
+  });
+
+  it('shows qty counter when item is in cart', () => {
+    (useAppSelector as jest.Mock).mockImplementation((selector: any) =>
+      selector({
+        products: {
+          products: [sampleProduct],
+          totalCount: 1,
+          isLoading: false,
+          error: null,
+          filters: defaultFilters,
+          categories: [],
+        },
+        cart: { items: [{ productId: 'p1', qty: 2 }] },
+        currency: { currency: 'USD' },
+      })
+    );
+    wrap();
+    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /increase quantity/i })).toBeInTheDocument();
   });
 });

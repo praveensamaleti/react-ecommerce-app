@@ -1,13 +1,16 @@
 import React from "react";
-import { Button, Card, Col, Form, Row, Table, Tabs, Tab, Badge } from "react-bootstrap";
+import { Button, Card, Col, Form, InputGroup, Pagination, Row, Table, Tabs, Tab, Badge } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
-import type { Category, Product } from "../types/domain";
+import { Search } from "lucide-react";
+import type { Product } from "../types/domain";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import {
   loadProductsThunk,
+  loadCategoriesThunk,
   upsertProductThunk,
   deleteProductThunk,
+  selectCategories,
 } from "../store/slices/productsSlice";
 import {
   loadOrdersForUserThunk,
@@ -20,7 +23,7 @@ type ProductForm = {
   id?: string;
   name: string;
   price: number;
-  category: Category;
+  category: string;
   stock: number;
   imageUrl: string;
   description: string;
@@ -28,15 +31,28 @@ type ProductForm = {
 
 const newId = () => `p${Math.floor(Math.random() * 90000) + 10000}`;
 
+const PAGE_SIZE = 10;
+
+const stockVariant = (n: number): "danger" | "warning" | "success" => {
+  if (n < 10) return "danger";
+  if (n <= 30) return "warning";
+  return "success";
+};
+
 export const AdminDashboardPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const products = useAppSelector((s) => s.products.products);
   const isLoading = useAppSelector((s) => s.products.isLoading);
   const error = useAppSelector((s) => s.products.error);
   const orders = useAppSelector((s) => s.orders.orders);
+  const categories = useAppSelector(selectCategories);
 
   const fmt = useCurrencyFormatter();
   const [editing, setEditing] = React.useState<Product | null>(null);
+  const [productSearch, setProductSearch] = React.useState("");
+  const [productPage, setProductPage] = React.useState(0);
+  const [inventorySearch, setInventorySearch] = React.useState("");
+  const [inventoryPage, setInventoryPage] = React.useState(0);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ProductForm>({
     defaultValues: {
@@ -57,6 +73,23 @@ export const AdminDashboardPage: React.FC = () => {
     dispatch(loadOrdersForUserThunk("u1"));
   }, [dispatch]);
 
+  React.useEffect(() => {
+    if (categories.length === 0) dispatch(loadCategoriesThunk());
+  }, [categories.length, dispatch]);
+
+  const filteredProducts = products.filter((p) =>
+    p.name.toLowerCase().includes(productSearch.toLowerCase())
+  );
+  const totalProductPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
+  const pageProducts = filteredProducts.slice(productPage * PAGE_SIZE, (productPage + 1) * PAGE_SIZE);
+
+  const sortedInventory = products.slice().sort((a, b) => a.stock - b.stock);
+  const filteredInventory = sortedInventory.filter((p) =>
+    p.name.toLowerCase().includes(inventorySearch.toLowerCase())
+  );
+  const totalInventoryPages = Math.max(1, Math.ceil(filteredInventory.length / PAGE_SIZE));
+  const pageInventory = filteredInventory.slice(inventoryPage * PAGE_SIZE, (inventoryPage + 1) * PAGE_SIZE);
+
   const startEdit = (p: Product) => {
     setEditing(p);
     reset({
@@ -76,7 +109,7 @@ export const AdminDashboardPage: React.FC = () => {
       id: undefined,
       name: "",
       price: 0,
-      category: "Electronics",
+      category: categories[0] ?? "Electronics",
       stock: 0,
       imageUrl: "",
       description: ""
@@ -127,13 +160,25 @@ export const AdminDashboardPage: React.FC = () => {
             <Col lg={7}>
               <Card className="shadow-sm">
                 <Card.Body>
-                  <div className="d-flex justify-content-between align-items-center">
+                  <div className="d-flex justify-content-between align-items-center mb-3">
                     <Card.Title className="mb-0">Product list</Card.Title>
                     <Button variant="outline-primary" size="sm" onClick={startNew}>
                       New product
                     </Button>
                   </div>
-                  <Table responsive hover className="mt-3" aria-label="Admin product table">
+                  <InputGroup className="mb-3">
+                    <InputGroup.Text aria-hidden="true"><Search size={14} /></InputGroup.Text>
+                    <Form.Control
+                      placeholder="Search products..."
+                      aria-label="Search products"
+                      value={productSearch}
+                      onChange={(e) => {
+                        setProductSearch(e.target.value);
+                        setProductPage(0);
+                      }}
+                    />
+                  </InputGroup>
+                  <Table responsive hover className="mt-0" aria-label="Admin product table">
                     <thead>
                       <tr>
                         <th>Name</th>
@@ -144,13 +189,16 @@ export const AdminDashboardPage: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {products.map((p) => (
+                      {pageProducts.map((p) => (
                         <tr key={p.id}>
                           <td className="fw-semibold">{p.name}</td>
                           <td>{p.category}</td>
                           <td className="text-end">{fmt(p.price)}</td>
                           <td className="text-end">
-                            <Badge bg={p.stock <= 10 ? "warning" : "secondary"} text={p.stock <= 10 ? "dark" : undefined}>
+                            <Badge
+                              bg={stockVariant(p.stock)}
+                              text={stockVariant(p.stock) === "warning" ? "dark" : undefined}
+                            >
                               {p.stock}
                             </Badge>
                           </td>
@@ -176,6 +224,29 @@ export const AdminDashboardPage: React.FC = () => {
                       ))}
                     </tbody>
                   </Table>
+                  {totalProductPages > 1 ? (
+                    <div className="d-flex justify-content-center mt-2">
+                      <Pagination size="sm" aria-label="Products pagination">
+                        <Pagination.Prev
+                          onClick={() => setProductPage((p) => Math.max(0, p - 1))}
+                          disabled={productPage === 0}
+                        />
+                        {Array.from({ length: totalProductPages }).map((_, i) => (
+                          <Pagination.Item
+                            key={i}
+                            active={i === productPage}
+                            onClick={() => setProductPage(i)}
+                          >
+                            {i + 1}
+                          </Pagination.Item>
+                        ))}
+                        <Pagination.Next
+                          onClick={() => setProductPage((p) => Math.min(totalProductPages - 1, p + 1))}
+                          disabled={productPage >= totalProductPages - 1}
+                        />
+                      </Pagination>
+                    </div>
+                  ) : null}
                 </Card.Body>
               </Card>
             </Col>
@@ -222,8 +293,9 @@ export const AdminDashboardPage: React.FC = () => {
                     <Form.Group className="mb-3" controlId="prodCategory">
                       <Form.Label>Category</Form.Label>
                       <Form.Select {...register("category", { required: true })} aria-label="Category">
-                        <option value="Electronics">Electronics</option>
-                        <option value="Clothing">Clothing</option>
+                        {categories.map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
                       </Form.Select>
                     </Form.Group>
                     <Form.Group className="mb-3" controlId="prodImage">
@@ -321,10 +393,22 @@ export const AdminDashboardPage: React.FC = () => {
           <Card className="shadow-sm">
             <Card.Body>
               <Card.Title>Inventory view</Card.Title>
-              <div className="text-muted">
+              <div className="text-muted mb-3">
                 Low stock items are highlighted to help you restock quickly.
               </div>
-              <Table responsive hover className="mt-3" aria-label="Inventory table">
+              <InputGroup className="mb-3">
+                <InputGroup.Text aria-hidden="true"><Search size={14} /></InputGroup.Text>
+                <Form.Control
+                  placeholder="Search inventory..."
+                  aria-label="Search inventory"
+                  value={inventorySearch}
+                  onChange={(e) => {
+                    setInventorySearch(e.target.value);
+                    setInventoryPage(0);
+                  }}
+                />
+              </InputGroup>
+              <Table responsive hover aria-label="Inventory table">
                 <thead>
                   <tr>
                     <th>Product</th>
@@ -333,22 +417,45 @@ export const AdminDashboardPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {products
-                    .slice()
-                    .sort((a, b) => a.stock - b.stock)
-                    .map((p) => (
-                      <tr key={p.id}>
-                        <td className="fw-semibold">{p.name}</td>
-                        <td>{p.category}</td>
-                        <td className="text-end">
-                          <Badge bg={p.stock <= 10 ? "warning" : "secondary"} text={p.stock <= 10 ? "dark" : undefined}>
-                            {p.stock}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
+                  {pageInventory.map((p) => (
+                    <tr key={p.id}>
+                      <td className="fw-semibold">{p.name}</td>
+                      <td>{p.category}</td>
+                      <td className="text-end">
+                        <Badge
+                          bg={stockVariant(p.stock)}
+                          text={stockVariant(p.stock) === "warning" ? "dark" : undefined}
+                        >
+                          {p.stock}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </Table>
+              {totalInventoryPages > 1 ? (
+                <div className="d-flex justify-content-center mt-2">
+                  <Pagination size="sm" aria-label="Inventory pagination">
+                    <Pagination.Prev
+                      onClick={() => setInventoryPage((p) => Math.max(0, p - 1))}
+                      disabled={inventoryPage === 0}
+                    />
+                    {Array.from({ length: totalInventoryPages }).map((_, i) => (
+                      <Pagination.Item
+                        key={i}
+                        active={i === inventoryPage}
+                        onClick={() => setInventoryPage(i)}
+                      >
+                        {i + 1}
+                      </Pagination.Item>
+                    ))}
+                    <Pagination.Next
+                      onClick={() => setInventoryPage((p) => Math.min(totalInventoryPages - 1, p + 1))}
+                      disabled={inventoryPage >= totalInventoryPages - 1}
+                    />
+                  </Pagination>
+                </div>
+              ) : null}
             </Card.Body>
           </Card>
         </Tab>

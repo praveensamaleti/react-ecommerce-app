@@ -49,7 +49,13 @@ const setup = (productOverrides: any = {}, orderOverrides: any = {}) => {
   (useAppDispatch as jest.Mock).mockReturnValue(mockDispatch);
   (useAppSelector as jest.Mock).mockImplementation((selector: any) =>
     selector({
-      products: { products: [product], isLoading: false, error: null, ...productOverrides },
+      products: {
+        products: [product],
+        isLoading: false,
+        error: null,
+        categories: ['Electronics', 'Clothing'],
+        ...productOverrides,
+      },
       orders: { orders: [order], isLoading: false, error: null, ...orderOverrides },
     })
   );
@@ -155,5 +161,40 @@ describe('AdminDashboardPage', () => {
     setup({ isLoading: true, products: [] });
     wrap();
     expect(screen.getByRole('status')).toBeInTheDocument();
+  });
+
+  it('product search filters results', () => {
+    wrap();
+    const searchInput = screen.getByRole('textbox', { name: /search products/i });
+    fireEvent.change(searchInput, { target: { value: 'nonexistent' } });
+    expect(screen.queryByText('Admin Product')).not.toBeInTheDocument();
+  });
+
+  it('product search clears to show all products', () => {
+    wrap();
+    const searchInput = screen.getByRole('textbox', { name: /search products/i });
+    fireEvent.change(searchInput, { target: { value: 'Admin' } });
+    expect(screen.getAllByText('Admin Product').length).toBeGreaterThan(0);
+  });
+
+  it('stock badge uses danger variant for stock < 10', () => {
+    setup({ products: [{ ...product, stock: 5 }] });
+    wrap();
+    const badge = screen.getAllByText('5').find((el) => el.closest('.badge'));
+    expect(badge?.closest('.badge')).toHaveClass('bg-danger');
+  });
+
+  it('stock badge uses warning variant for stock 10-30', () => {
+    setup({ products: [{ ...product, stock: 15 }] });
+    wrap();
+    const badge = screen.getAllByText('15').find((el) => el.closest('.badge'));
+    expect(badge?.closest('.badge')).toHaveClass('bg-warning');
+  });
+
+  it('stock badge uses success variant for stock > 30', () => {
+    setup({ products: [{ ...product, stock: 50 }] });
+    wrap();
+    const badge = screen.getAllByText('50').find((el) => el.closest('.badge'));
+    expect(badge?.closest('.badge')).toHaveClass('bg-success');
   });
 });
