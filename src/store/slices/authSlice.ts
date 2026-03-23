@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import type { User } from "../../types/domain";
+import type { User, CartItem } from "../../types/domain";
 import api from "../../utils/api";
 import { setStorageItem, removeStorageItem } from "../../utils/storage";
+import { loadCartThunk, syncCartThunk, clearCart } from "./cartSlice";
 
 type AuthState = {
   user: User | null;
@@ -21,13 +22,20 @@ export const loginThunk = createAsyncThunk(
   "auth/login",
   async (
     { email, password }: { email: string; password: string },
-    { rejectWithValue }
+    { rejectWithValue, getState, dispatch }
   ) => {
     try {
       const response = await api.post("/api/auth/login", { email, password });
       const { user, token, refreshToken } = response.data;
       setStorageItem("token", token);
       setStorageItem("refreshToken", refreshToken);
+      const state = getState() as { cart: { items: CartItem[] } };
+      const localItems = state.cart.items;
+      if (localItems.length > 0) {
+        await dispatch(syncCartThunk(localItems) as any);
+      } else {
+        await dispatch(loadCartThunk() as any);
+      }
       return { user, token, refreshToken } as {
         user: User;
         token: string;
@@ -49,7 +57,7 @@ export const registerThunk = createAsyncThunk(
       email,
       password,
     }: { name: string; email: string; password: string },
-    { rejectWithValue }
+    { rejectWithValue, getState, dispatch }
   ) => {
     try {
       const response = await api.post("/api/auth/register", {
@@ -60,6 +68,13 @@ export const registerThunk = createAsyncThunk(
       const { user, token, refreshToken } = response.data;
       setStorageItem("token", token);
       setStorageItem("refreshToken", refreshToken);
+      const state = getState() as { cart: { items: CartItem[] } };
+      const localItems = state.cart.items;
+      if (localItems.length > 0) {
+        await dispatch(syncCartThunk(localItems) as any);
+      } else {
+        await dispatch(loadCartThunk() as any);
+      }
       return { user, token, refreshToken } as {
         user: User;
         token: string;
@@ -73,16 +88,20 @@ export const registerThunk = createAsyncThunk(
   }
 );
 
-export const logoutThunk = createAsyncThunk("auth/logout", async () => {
-  try {
-    await api.post("/api/auth/logout");
-  } catch (err) {
-    console.error("Logout error:", err);
-  } finally {
-    removeStorageItem("token");
-    removeStorageItem("refreshToken");
+export const logoutThunk = createAsyncThunk(
+  "auth/logout",
+  async (_, { dispatch }) => {
+    try {
+      await api.post("/api/auth/logout");
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      removeStorageItem("token");
+      removeStorageItem("refreshToken");
+      dispatch(clearCart());
+    }
   }
-});
+);
 
 const authSlice = createSlice({
   name: "auth",

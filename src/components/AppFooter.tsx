@@ -14,7 +14,7 @@ export const AppFooter: React.FC = () => {
           </Col>
           <Col md={6} className="text-md-end">
             <div className="small">
-              Built with React, React Router, Zustand, and Bootstrap.
+              Built with React, React Router, Redux Tookit, and Bootstrap.
             </div>
             <div className="small text-white-50">
               © {new Date().getFullYear()} React Store

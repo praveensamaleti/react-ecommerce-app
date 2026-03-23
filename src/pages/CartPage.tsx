@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Col, Row, Card } from "react-bootstrap";
+import { Alert, Badge, Col, Row, Card } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { EmptyState } from "../components/EmptyState";
@@ -35,6 +35,10 @@ export const CartPage: React.FC = () => {
     .map((it) => ({ it, p: productMap.get(it.productId) }))
     .filter((x): x is { it: typeof items[number]; p: NonNullable<(typeof x)["p"]> } => Boolean(x.p));
 
+  const hasOutOfStockItems = hydrated.some(
+    ({ it, p }) => p.stock === 0 || p.stock < it.qty
+  );
+
   if (items.length === 0) {
     return (
       <EmptyState
@@ -50,12 +54,20 @@ export const CartPage: React.FC = () => {
     <Row className="g-4">
       <Col lg={8}>
         <h1 className="h3 mb-3">Cart</h1>
+        {hasOutOfStockItems && (
+          <Alert variant="warning" className="mb-3">
+            ⚠️ Some items in your cart are out of stock or have insufficient inventory. Please update quantities before checkout.
+          </Alert>
+        )}
         <div className="rounded-3 shadow-sm p-3 bg-body-tertiary">
           {hydrated.map(({ it, p }) => (
             <CartItemRow
               key={p.id}
               product={p}
               qty={it.qty}
+              outOfStock={p.stock === 0}
+              insufficientStock={p.stock > 0 && p.stock < it.qty}
+              availableStock={p.stock}
               onQtyChange={(q) => dispatch(setQty({ productId: p.id, qty: q }))}
               onRemove={() => {
                 dispatch(removeFromCart(p.id));
@@ -87,7 +99,7 @@ export const CartPage: React.FC = () => {
               <span>{fmt(totals.total)}</span>
             </div>
             <div className="d-grid gap-2 mt-3">
-              <LinkButton to="/checkout" variant="primary">
+              <LinkButton to="/checkout" variant="primary" disabled={hasOutOfStockItems}>
                 Proceed to checkout
               </LinkButton>
               <LinkButton to="/products" variant="outline-primary">

@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Form, Image } from "react-bootstrap";
+import { Badge, Button, Form, Image } from "react-bootstrap";
 import { Trash2 } from "lucide-react";
 import type { Product } from "../types/domain";
 import { useCurrencyFormatter } from "../hooks/useCurrencyFormatter";
@@ -9,7 +9,10 @@ export const CartItemRow: React.FC<{
   qty: number;
   onQtyChange: (qty: number) => void;
   onRemove: () => void;
-}> = ({ product, qty, onQtyChange, onRemove }) => {
+  outOfStock?: boolean;
+  insufficientStock?: boolean;
+  availableStock?: number;
+}> = ({ product, qty, onQtyChange, onRemove, outOfStock, insufficientStock, availableStock }) => {
   const fmt = useCurrencyFormatter();
   const lineTotal = product.price * qty;
   return (
@@ -25,7 +28,15 @@ export const CartItemRow: React.FC<{
       <div className="flex-grow-1">
         <div className="d-flex justify-content-between align-items-start gap-2">
           <div>
-            <div className="fw-semibold">{product.name}</div>
+            <div className="fw-semibold">
+              {product.name}
+              {outOfStock && (
+                <Badge bg="danger" className="ms-2">Out of stock</Badge>
+              )}
+              {insufficientStock && !outOfStock && (
+                <Badge bg="warning" text="dark" className="ms-2">Only {availableStock} available</Badge>
+              )}
+            </div>
             <div className="text-muted small">{fmt(product.price)} each</div>
           </div>
           <Button
@@ -59,4 +70,3 @@ export const CartItemRow: React.FC<{
     </div>
   );
 };
-

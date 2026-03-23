@@ -1,5 +1,6 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import type { CartItem, Product } from "../../types/domain";
+import { fetchServerCart, syncServerCart } from "../../utils/cartApi";
 
 type CartTotals = {
   subtotal: number;
@@ -12,6 +13,7 @@ type CartTotals = {
 type CartState = {
   items: CartItem[];
   totals: CartTotals;
+  serverSynced: boolean;
 };
 
 const initialTotals: CartTotals = {
@@ -25,6 +27,7 @@ const initialTotals: CartTotals = {
 const initialState: CartState = {
   items: [],
   totals: { ...initialTotals },
+  serverSynced: false,
 };
 
 function clamp(n: number, min: number, max: number): number {
@@ -45,6 +48,22 @@ function computeTotals(items: CartItem[], products: Product[]): CartTotals {
   const total = taxable + tax;
   return { subtotal, discount, tax, total, itemCount };
 }
+
+export const loadCartThunk = createAsyncThunk(
+  "cart/loadFromServer",
+  async () => {
+    const response = await fetchServerCart();
+    return response.data.items;
+  }
+);
+
+export const syncCartThunk = createAsyncThunk(
+  "cart/syncWithServer",
+  async (items: CartItem[]) => {
+    const response = await syncServerCart(items);
+    return response.data.items;
+  }
+);
 
 const cartSlice = createSlice({
   name: "cart",
@@ -77,6 +96,7 @@ const cartSlice = createSlice({
     clearCart(state) {
       state.items = [];
       state.totals = { ...initialTotals };
+      state.serverSynced = false;
     },
     recomputeTotals(state, action: PayloadAction<Product[]>) {
       const nextTotals = computeTotals(state.items, action.payload);
@@ -90,6 +110,17 @@ const cartSlice = createSlice({
         state.totals = nextTotals;
       }
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(loadCartThunk.fulfilled, (state, action) => {
+        state.items = action.payload;
+        state.serverSynced = true;
+      })
+      .addCase(syncCartThunk.fulfilled, (state, action) => {
+        state.items = action.payload;
+        state.serverSynced = true;
+      });
   },
 });
 
