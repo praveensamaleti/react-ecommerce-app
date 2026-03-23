@@ -99,6 +99,6 @@ describe('App routing', () => {
 
   it('/order-success renders OrderSuccessPage', () => {
     renderAt('/order-success');
-    expect(screen.getByText('Success!')).toBeInTheDocument();
+    expect(screen.getByText('Order confirmed!')).toBeInTheDocument();
   });
 });
