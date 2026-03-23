@@ -7,16 +7,18 @@ export const AppFooter: React.FC = () => {
       <Container fluid="lg">
         <Row className="gy-3 align-items-center">
           <Col md={6}>
-            <div className="fw-semibold">React Store</div>
-            <div className="small text-white-50">
-              A mock e-commerce frontend (no backend).
+            <div className="fw-bold" style={{ color: "white", fontSize: "1rem", letterSpacing: "-0.02em" }}>
+              React Store
+            </div>
+            <div style={{ color: "var(--ec-footer-color)", fontSize: "0.82rem", marginTop: 4 }}>
+              Modern e-commerce, powered by React & Redux.
             </div>
           </Col>
           <Col md={6} className="text-md-end">
-            <div className="small">
-              Built with React, React Router, Redux Tookit, and Bootstrap.
+            <div style={{ color: "var(--ec-footer-color)", fontSize: "0.82rem" }}>
+              Built with React 18 · Redux Toolkit · Bootstrap 5
             </div>
-            <div className="small text-white-50">
+            <div style={{ color: "#475569", fontSize: "0.78rem", marginTop: 4 }}>
               © {new Date().getFullYear()} React Store
             </div>
           </Col>
@@ -25,4 +27,3 @@ export const AppFooter: React.FC = () => {
     </footer>
   );
 };
-

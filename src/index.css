@@ -1,30 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* ── Bootstrap 5 CSS variable overrides ── */
+:root {
+  --bs-primary: #6366f1;
+  --bs-primary-rgb: 99, 102, 241;
+  --bs-link-color: #6366f1;
+  --bs-link-color-rgb: 99, 102, 241;
+  --bs-font-sans-serif: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --bs-border-radius: 0.625rem;
+  --bs-border-radius-lg: 1rem;
+}
+
+/* ── App theme tokens – light ── */
 :root,
 [data-bs-theme="light"] {
-  --ec-body-bg: #f7f9fc;
-  --ec-body-color: #0d1b2a;
-  --ec-hover-shadow: rgba(15, 23, 42, 0.12);
-  --ec-footer-bg: #0b1120;
-  --ec-footer-color: #e5e7eb;
-  --ec-footer-link: #60a5fa;
-  --ec-hero-gradient: linear-gradient(135deg, #0d6efd, #0b5ed7);
-}
-
-[data-bs-theme="dark"] {
-  --ec-body-bg: #0f1117;
-  --ec-body-color: #e2e8f0;
-  --ec-hover-shadow: rgba(0, 0, 0, 0.35);
-  --ec-footer-bg: #060810;
+  --ec-body-bg: #f8fafc;
+  --ec-body-color: #0f172a;
+  --ec-primary: #6366f1;
+  --ec-primary-dark: #4f46e5;
+  --ec-primary-rgb: 99, 102, 241;
+  --ec-primary-light: #e0e7ff;
+  --ec-card-bg: #ffffff;
+  --ec-card-border: rgba(0, 0, 0, 0.06);
+  --ec-hover-shadow: 0 20px 40px rgba(99, 102, 241, 0.15);
+  --ec-footer-bg: #0f172a;
   --ec-footer-color: #94a3b8;
-  --ec-footer-link: #93c5fd;
-  --ec-hero-gradient: linear-gradient(135deg, #1d4ed8, #1e3a8a);
+  --ec-footer-link: #a5b4fc;
+  --ec-hero-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
+  --ec-navbar-bg: rgba(255, 255, 255, 0.88);
+  --ec-navbar-border: rgba(99, 102, 241, 0.1);
+  --ec-sidebar-bg: #ffffff;
+  --ec-input-border: #e2e8f0;
+  --ec-muted: #64748b;
 }
 
+/* ── App theme tokens – dark ── */
+[data-bs-theme="dark"] {
+  --ec-body-bg: #0f172a;
+  --ec-body-color: #f1f5f9;
+  --ec-primary: #818cf8;
+  --ec-primary-dark: #6366f1;
+  --ec-primary-rgb: 129, 140, 248;
+  --ec-primary-light: #1e1b4b;
+  --ec-card-bg: #1e293b;
+  --ec-card-border: rgba(255, 255, 255, 0.07);
+  --ec-hover-shadow: 0 20px 40px rgba(129, 140, 248, 0.2);
+  --ec-footer-bg: #020617;
+  --ec-footer-color: #64748b;
+  --ec-footer-link: #818cf8;
+  --ec-hero-gradient: linear-gradient(135deg, #312e81 0%, #4c1d95 50%, #164e63 100%);
+  --ec-navbar-bg: rgba(15, 23, 42, 0.92);
+  --ec-navbar-border: rgba(129, 140, 248, 0.15);
+  --ec-sidebar-bg: #1e293b;
+  --ec-input-border: #334155;
+  --ec-muted: #94a3b8;
+}
+
+/* ── Base ── */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-    Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  font-family: var(--bs-font-sans-serif);
   background-color: var(--ec-body-bg);
   color: var(--ec-body-color);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
@@ -32,6 +71,7 @@ a {
   text-decoration: none;
 }
 
+/* ── Layout ── */
 .app-shell {
   min-height: 100vh;
   display: flex;
@@ -43,35 +83,283 @@ a {
   padding-top: 4.5rem;
 }
 
+/* ── Navbar: glassmorphism ── */
+.navbar-glass {
+  background: var(--ec-navbar-bg) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-bottom: 1px solid var(--ec-navbar-border) !important;
+  box-shadow: 0 1px 24px rgba(0, 0, 0, 0.05) !important;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.navbar-brand-modern {
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--ec-primary), #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Product cards ── */
 .card-hover {
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--ec-card-border) !important;
+  border-radius: 16px !important;
+  background: var(--ec-card-bg) !important;
+  overflow: hidden;
 }
 
 .card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 0.75rem 1.5rem var(--ec-hover-shadow);
+  transform: translateY(-7px);
+  box-shadow: var(--ec-hover-shadow) !important;
 }
 
+/* Product image container – enables zoom + badge overlay */
+.product-img-wrap {
+  overflow: hidden;
+  position: relative;
+  display: block;
+  background: #f1f5f9;
+}
+
+.product-img-wrap img {
+  display: block;
+  width: 100%;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover .product-img-wrap img {
+  transform: scale(1.07);
+}
+
+.product-category-tag {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(139, 92, 246, 0.9));
+  color: white;
+  font-size: 0.67rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+/* ── Buttons ── */
+.btn-primary {
+  background: linear-gradient(135deg, var(--ec-primary), #8b5cf6) !important;
+  border: none !important;
+  font-weight: 600;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 12px rgba(var(--ec-primary-rgb), 0.3) !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(var(--ec-primary-rgb), 0.45) !important;
+  background: linear-gradient(135deg, var(--ec-primary-dark), #7c3aed) !important;
+  color: white !important;
+}
+
+.btn-primary:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 6px rgba(var(--ec-primary-rgb), 0.3) !important;
+}
+
+.btn-outline-primary {
+  border-color: var(--ec-primary) !important;
+  color: var(--ec-primary) !important;
+  font-weight: 600;
+  transition: all 0.2s ease !important;
+}
+
+.btn-outline-primary:hover {
+  background: var(--ec-primary-light) !important;
+  color: var(--ec-primary-dark) !important;
+  border-color: var(--ec-primary) !important;
+}
+
+/* ── Filter sidebar ── */
+.filter-panel {
+  background: var(--ec-sidebar-bg);
+  border: 1px solid var(--ec-card-border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.filter-panel .filter-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ec-muted);
+  margin-bottom: 0.6rem;
+  display: block;
+}
+
+/* ── Form controls ── */
+.form-control,
+.form-select {
+  border-color: var(--ec-input-border) !important;
+  border-radius: 10px !important;
+  font-size: 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--ec-primary) !important;
+  box-shadow: 0 0 0 3px rgba(var(--ec-primary-rgb), 0.15) !important;
+}
+
+/* ── Hero section ── */
 .hero-section {
   background: var(--ec-hero-gradient);
   color: #fff;
-  padding: 4rem 1rem;
+  padding: 5rem 1rem;
+  position: relative;
+  overflow: hidden;
 }
 
 .hero-section h1 {
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  font-size: clamp(2rem, 5vw, 3.5rem);
 }
 
 .hero-section p {
   font-size: 1.1rem;
+  opacity: 0.92;
 }
 
+/* ── Cart page ── */
+.cart-items-panel {
+  background: var(--ec-card-bg);
+  border: 1px solid var(--ec-card-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.cart-item-row {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--ec-card-border);
+}
+
+.cart-item-row:last-child {
+  border-bottom: none;
+}
+
+.order-summary-card {
+  border-radius: 16px !important;
+  border: 1px solid var(--ec-card-border) !important;
+  background: var(--ec-card-bg) !important;
+  position: sticky;
+  top: 5.5rem;
+}
+
+.qty-input {
+  width: 72px !important;
+  text-align: center;
+  border-radius: 10px !important;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-color: var(--ec-card-border) !important;
+}
+
+/* ── Admin tables ── */
+.table-modern thead th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ec-muted) !important;
+  border-bottom: 2px solid var(--ec-card-border) !important;
+  padding: 0.9rem 0.75rem;
+  background: transparent !important;
+}
+
+.table-modern tbody td {
+  padding: 0.9rem 0.75rem;
+  vertical-align: middle;
+  border-color: var(--ec-card-border) !important;
+}
+
+.table-modern tbody tr:hover td {
+  background: rgba(var(--ec-primary-rgb), 0.04) !important;
+}
+
+/* ── Pagination ── */
+.page-link {
+  border-color: var(--ec-card-border) !important;
+  color: var(--ec-primary) !important;
+  border-radius: 8px !important;
+  margin: 0 2px;
+  transition: all 0.15s ease;
+}
+
+.page-item.active .page-link {
+  background: linear-gradient(135deg, var(--ec-primary), #8b5cf6) !important;
+  border-color: var(--ec-primary) !important;
+  color: white !important;
+}
+
+.page-link:hover {
+  background: var(--ec-primary-light) !important;
+  color: var(--ec-primary-dark) !important;
+}
+
+.page-link:focus {
+  box-shadow: 0 0 0 3px rgba(var(--ec-primary-rgb), 0.15) !important;
+}
+
+/* ── Admin cards ── */
+.admin-card {
+  border-radius: 16px !important;
+  border: 1px solid var(--ec-card-border) !important;
+  background: var(--ec-card-bg) !important;
+}
+
+/* ── Page heading ── */
+.page-title {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+/* ── Footer ── */
 .footer {
   background-color: var(--ec-footer-bg);
   color: var(--ec-footer-color);
-  padding: 1.5rem 0;
+  padding: 2.5rem 0;
 }
 
 .footer a {
   color: var(--ec-footer-link);
+  transition: opacity 0.2s;
+}
+
+.footer a:hover {
+  opacity: 0.8;
+}
+
+/* ── Nav link polish ── */
+.nav-link {
+  font-weight: 500;
+  font-size: 0.92rem;
+  transition: color 0.15s ease;
+}
+
+/* ── Badge secondary override ── */
+.badge.bg-secondary {
+  background-color: #e2e8f0 !important;
+  color: #475569 !important;
+  font-weight: 600;
 }

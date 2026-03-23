@@ -53,13 +53,13 @@ export const CartPage: React.FC = () => {
   return (
     <Row className="g-4">
       <Col lg={8}>
-        <h1 className="h3 mb-3">Cart</h1>
+        <h1 className="h3 mb-3 page-title">Cart</h1>
         {hasOutOfStockItems && (
-          <Alert variant="warning" className="mb-3">
-            ⚠️ Some items in your cart are out of stock or have insufficient inventory. Please update quantities before checkout.
+          <Alert variant="warning" className="mb-3" style={{ borderRadius: 12, fontSize: "0.9rem" }}>
+            Some items in your cart are out of stock or have insufficient inventory. Please update quantities before checkout.
           </Alert>
         )}
-        <div className="rounded-3 shadow-sm p-3 bg-body-tertiary">
+        <div className="cart-items-panel">
           {hydrated.map(({ it, p }) => (
             <CartItemRow
               key={p.id}
@@ -78,27 +78,29 @@ export const CartPage: React.FC = () => {
         </div>
       </Col>
       <Col lg={4}>
-        <Card className="shadow-sm">
-          <Card.Body>
-            <Card.Title>Order summary</Card.Title>
-            <div className="d-flex justify-content-between mt-3">
-              <span className="text-muted">Subtotal</span>
-              <span>{fmt(totals.subtotal)}</span>
+        <Card className="order-summary-card shadow-sm">
+          <Card.Body className="p-4">
+            <h5 className="fw-bold mb-4" style={{ letterSpacing: "-0.02em" }}>Order summary</h5>
+            <div className="d-flex justify-content-between py-2 border-bottom" style={{ borderColor: "var(--ec-card-border)" }}>
+              <span className="text-muted" style={{ fontSize: "0.9rem" }}>Subtotal</span>
+              <span className="fw-semibold">{fmt(totals.subtotal)}</span>
             </div>
-            <div className="d-flex justify-content-between mt-2">
-              <span className="text-muted">Discount (10%)</span>
-              <span>-{fmt(totals.discount)}</span>
+            <div className="d-flex justify-content-between py-2 border-bottom" style={{ borderColor: "var(--ec-card-border)", color: "#10b981" }}>
+              <span style={{ fontSize: "0.9rem" }}>Discount (10%)</span>
+              <span className="fw-semibold">-{fmt(totals.discount)}</span>
             </div>
-            <div className="d-flex justify-content-between mt-2">
-              <span className="text-muted">Tax</span>
-              <span>{fmt(totals.tax)}</span>
+            <div className="d-flex justify-content-between py-2" style={{ borderColor: "var(--ec-card-border)" }}>
+              <span className="text-muted" style={{ fontSize: "0.9rem" }}>Tax</span>
+              <span className="fw-semibold">{fmt(totals.tax)}</span>
             </div>
-            <hr />
-            <div className="d-flex justify-content-between fw-semibold">
-              <span>Total</span>
-              <span>{fmt(totals.total)}</span>
+            <hr style={{ borderColor: "var(--ec-card-border)", margin: "0.75rem 0" }} />
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <span className="fw-bold" style={{ fontSize: "1rem" }}>Total</span>
+              <span className="fw-bold" style={{ fontSize: "1.3rem", color: "var(--ec-primary)" }}>
+                {fmt(totals.total)}
+              </span>
             </div>
-            <div className="d-grid gap-2 mt-3">
+            <div className="d-grid gap-2">
               <LinkButton to="/checkout" variant="primary" disabled={hasOutOfStockItems}>
                 Proceed to checkout
               </LinkButton>

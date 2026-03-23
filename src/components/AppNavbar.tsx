@@ -20,9 +20,9 @@ export const AppNavbar: React.FC = () => {
   };
 
   return (
-    <Navbar bg="body" expand="lg" fixed="top" className="shadow-sm" aria-label="Main navigation">
+    <Navbar bg="body" expand="lg" fixed="top" className="navbar-glass" aria-label="Main navigation">
       <Container fluid="lg">
-        <Navbar.Brand as={Link} to="/" className="fw-bold text-primary">
+        <Navbar.Brand as={Link} to="/" className="navbar-brand-modern">
           React Store
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="main-navbar" />

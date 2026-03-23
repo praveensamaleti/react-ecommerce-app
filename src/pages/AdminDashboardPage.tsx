@@ -144,11 +144,21 @@ export const AdminDashboardPage: React.FC = () => {
 
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-        <h1 className="h3 m-0">Admin Dashboard</h1>
-        <Badge bg={inventoryLow > 0 ? "warning" : "success"} text={inventoryLow > 0 ? "dark" : undefined}>
+      <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <h1 className="h3 m-0 page-title">Admin Dashboard</h1>
+        <span
+          style={{
+            background: inventoryLow > 0 ? "linear-gradient(135deg, #f59e0b, #d97706)" : "linear-gradient(135deg, #10b981, #059669)",
+            color: "white",
+            borderRadius: 20,
+            padding: "4px 14px",
+            fontSize: "0.78rem",
+            fontWeight: 700,
+            letterSpacing: "0.04em",
+          }}
+        >
           {inventoryLow} low-stock items
-        </Badge>
+        </span>
       </div>
 
       {isLoading && products.length === 0 ? <LoadingSpinner label="Loading admin data..." /> : null}
@@ -158,7 +168,7 @@ export const AdminDashboardPage: React.FC = () => {
         <Tab eventKey="products" title="Products">
           <Row className="g-4">
             <Col lg={7}>
-              <Card className="shadow-sm">
+              <Card className="admin-card shadow-sm">
                 <Card.Body>
                   <div className="d-flex justify-content-between align-items-center mb-3">
                     <Card.Title className="mb-0">Product list</Card.Title>
@@ -178,7 +188,7 @@ export const AdminDashboardPage: React.FC = () => {
                       }}
                     />
                   </InputGroup>
-                  <Table responsive hover className="mt-0" aria-label="Admin product table">
+                  <Table responsive hover className="mt-0 table-modern" aria-label="Admin product table">
                     <thead>
                       <tr>
                         <th>Name</th>
@@ -252,9 +262,9 @@ export const AdminDashboardPage: React.FC = () => {
             </Col>
 
             <Col lg={5}>
-              <Card className="shadow-sm">
+              <Card className="admin-card shadow-sm">
                 <Card.Body>
-                  <Card.Title>{editing ? "Edit product" : "Create product"}</Card.Title>
+                  <Card.Title className="fw-bold" style={{ letterSpacing: "-0.02em" }}>{editing ? "Edit product" : "Create product"}</Card.Title>
                   <Form onSubmit={handleSubmit(onSubmit)} aria-label="Product editor form">
                     <Form.Control type="hidden" {...register("id")} />
                     <Form.Group className="mb-3" controlId="prodName">
@@ -344,7 +354,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <Card.Title className="mb-0">Orders</Card.Title>
                 <div className="small text-muted">{orders.length} total</div>
               </div>
-              <Table responsive hover className="mt-3" aria-label="Admin orders table">
+              <Table responsive hover className="mt-3 table-modern" aria-label="Admin orders table">
                 <thead>
                   <tr>
                     <th>Order</th>
@@ -408,7 +418,7 @@ export const AdminDashboardPage: React.FC = () => {
                   }}
                 />
               </InputGroup>
-              <Table responsive hover aria-label="Inventory table">
+              <Table responsive hover className="table-modern" aria-label="Inventory table">
                 <thead>
                   <tr>
                     <th>Product</th>

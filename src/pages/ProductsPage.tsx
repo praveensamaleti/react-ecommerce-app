@@ -97,12 +97,21 @@ export const ProductsPage: React.FC = () => {
 
   return (
     <div>
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-        <h1 className="h3 m-0">Products</h1>
+      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+        <h1 className="h3 m-0 page-title">Products</h1>
         <div className="d-flex align-items-center gap-2">
-          <Badge bg="light" text="dark" className="border">
+          <span
+            style={{
+              background: "var(--ec-primary-light)",
+              color: "var(--ec-primary)",
+              borderRadius: 20,
+              padding: "4px 12px",
+              fontSize: "0.78rem",
+              fontWeight: 700,
+            }}
+          >
             {totalCount} results
-          </Badge>
+          </span>
           <Button
             variant="outline-primary"
             size="sm"
@@ -113,7 +122,7 @@ export const ProductsPage: React.FC = () => {
               setSearchInput("");
             }}
           >
-            <SlidersHorizontal size={16} className="me-2" aria-hidden="true" />
+            <SlidersHorizontal size={14} className="me-1" aria-hidden="true" />
             Reset
           </Button>
         </div>
@@ -121,23 +130,24 @@ export const ProductsPage: React.FC = () => {
 
       <Row className="g-3">
         <Col lg={3}>
-          <div className="rounded-3 shadow-sm p-3 bg-body-tertiary">
-            <div className="fw-semibold mb-2">Search</div>
+          <div className="filter-panel">
+            <span className="filter-label">Search</span>
             <InputGroup>
-              <InputGroup.Text aria-hidden="true">
-                <Search size={16} />
+              <InputGroup.Text aria-hidden="true" style={{ borderRadius: "10px 0 0 10px", background: "transparent" }}>
+                <Search size={14} />
               </InputGroup.Text>
               <Form.Control
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Search products..."
                 aria-label="Search products"
+                style={{ borderLeft: "none" }}
               />
             </InputGroup>
 
-            <hr />
+            <hr style={{ borderColor: "var(--ec-card-border)", margin: "1rem 0" }} />
 
-            <div className="fw-semibold mb-2">Category</div>
+            <span className="filter-label">Category</span>
             <Form.Select
               value={filters.category}
               onChange={(e) => {
@@ -153,9 +163,9 @@ export const ProductsPage: React.FC = () => {
               ))}
             </Form.Select>
 
-            <hr />
+            <hr style={{ borderColor: "var(--ec-card-border)", margin: "1rem 0" }} />
 
-            <div className="fw-semibold mb-2">Price range</div>
+            <span className="filter-label">Price range</span>
             <Form.Label className="small text-muted">
               $0 – ${priceInput}
             </Form.Label>
@@ -167,9 +177,9 @@ export const ProductsPage: React.FC = () => {
               aria-label="Max price"
             />
 
-            <hr />
+            <hr style={{ borderColor: "var(--ec-card-border)", margin: "1rem 0" }} />
 
-            <div className="fw-semibold mb-2">Page size</div>
+            <span className="filter-label">Page size</span>
             <Form.Select
               value={filters.pageSize}
               onChange={(e) => {
