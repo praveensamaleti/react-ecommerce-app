@@ -8,7 +8,7 @@ import { CartItemRow } from "../components/CartItemRow";
 import { LinkButton } from "../components/LinkButton";
 import { useCurrencyFormatter } from "../hooks/useCurrencyFormatter";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { removeFromCart, setQty } from "../store/slices/cartSlice";
+import { removeFromCartThunk, setQtyThunk } from "../store/slices/cartSlice";
 import { loadProductsThunk } from "../store/slices/productsSlice";
 import { useCartAutoTotals } from "../hooks/useCartAutoTotals";
 
@@ -68,9 +68,9 @@ export const CartPage: React.FC = () => {
               outOfStock={p.stock === 0}
               insufficientStock={p.stock > 0 && p.stock < it.qty}
               availableStock={p.stock}
-              onQtyChange={(q) => dispatch(setQty({ productId: p.id, qty: q }))}
+              onQtyChange={(q) => dispatch(setQtyThunk({ productId: p.id, qty: q }))}
               onRemove={() => {
-                dispatch(removeFromCart(p.id));
+                dispatch(removeFromCartThunk(p.id));
                 toast.info("Removed from cart.");
               }}
             />

@@ -126,4 +126,40 @@ const cartSlice = createSlice({
 
 export const { addToCart, removeFromCart, setQty, clearCart, recomputeTotals } =
   cartSlice.actions;
+
+type CartThunkState = { auth: { token: string | null }; cart: { items: CartItem[] } };
+
+export const addToCartThunk = createAsyncThunk(
+  "cart/addItem",
+  async (payload: { productId: string; qty?: number }, { dispatch, getState }) => {
+    dispatch(addToCart(payload));
+    const state = getState() as CartThunkState;
+    if (state.auth.token) {
+      await dispatch(syncCartThunk(state.cart.items));
+    }
+  }
+);
+
+export const removeFromCartThunk = createAsyncThunk(
+  "cart/removeItem",
+  async (productId: string, { dispatch, getState }) => {
+    dispatch(removeFromCart(productId));
+    const state = getState() as CartThunkState;
+    if (state.auth.token) {
+      await dispatch(syncCartThunk(state.cart.items));
+    }
+  }
+);
+
+export const setQtyThunk = createAsyncThunk(
+  "cart/setItemQty",
+  async (payload: { productId: string; qty: number }, { dispatch, getState }) => {
+    dispatch(setQty(payload));
+    const state = getState() as CartThunkState;
+    if (state.auth.token) {
+      await dispatch(syncCartThunk(state.cart.items));
+    }
+  }
+);
+
 export default cartSlice.reducer;

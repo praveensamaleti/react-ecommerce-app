@@ -15,7 +15,7 @@ import { EmptyState } from "../components/EmptyState";
 import { RatingStars } from "../components/RatingStars";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { loadProductsThunk } from "../store/slices/productsSlice";
-import { addToCart } from "../store/slices/cartSlice";
+import { addToCartThunk } from "../store/slices/cartSlice";
 import { useCurrencyFormatter } from "../hooks/useCurrencyFormatter";
 import { useCartAutoTotals } from "../hooks/useCartAutoTotals";
 
@@ -59,7 +59,7 @@ export const ProductDetailPage: React.FC = () => {
 
   const onAdd = () => {
     const nextQty = Math.min(maxQty, Math.max(1, qty));
-    dispatch(addToCart({ productId: product.id, qty: nextQty }));
+    dispatch(addToCartThunk({ productId: product.id, qty: nextQty }));
     toast.success("Added to cart.");
   };
 

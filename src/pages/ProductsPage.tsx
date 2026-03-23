@@ -25,7 +25,7 @@ import {
   setFiltersPageSize,
   resetFilters,
 } from "../store/slices/productsSlice";
-import { addToCart } from "../store/slices/cartSlice";
+import { addToCartThunk } from "../store/slices/cartSlice";
 import { useDebounce } from "../hooks/useDebounce";
 import { useCartAutoTotals } from "../hooks/useCartAutoTotals";
 
@@ -65,7 +65,7 @@ export const ProductsPage: React.FC = () => {
   const pageItems = products;
 
   const onAdd = (id: string, qty = 1) => {
-    dispatch(addToCart({ productId: id, qty }));
+    dispatch(addToCartThunk({ productId: id, qty }));
     toast.success("Added to cart.");
   };
 
