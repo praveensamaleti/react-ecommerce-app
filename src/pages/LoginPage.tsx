@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Card, Form } from "react-bootstrap";
+import { Button, Form } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
@@ -40,67 +40,81 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="d-flex justify-content-center">
-      <Card className="shadow-sm" style={{ maxWidth: 460, width: "100%" }}>
-        <Card.Body>
-          <Card.Title className="h4">Login</Card.Title>
-          <Card.Text className="text-muted">
-            Use `user@example.com` / `Password123!` or `admin@example.com` /
-            `Admin123!`.
-          </Card.Text>
+    <div className="auth-wrap">
+      <div className="auth-card">
+        <div className="auth-card__logo">React Store</div>
+        <h1 className="auth-card__title">Welcome back</h1>
+        <p className="auth-card__subtitle">Sign in to your account to continue shopping</p>
 
-          {error ? (
-            <div className="alert alert-danger" role="alert">
-              {error}
-            </div>
-          ) : null}
+        <div
+          className="rounded-3 mb-4 px-3 py-2"
+          style={{
+            background: "rgba(var(--ec-primary-rgb), 0.07)",
+            border: "1px solid rgba(var(--ec-primary-rgb), 0.15)",
+            fontSize: "0.8rem",
+            color: "var(--ec-muted)"
+          }}
+        >
+          Demo: <strong>user@example.com</strong> / <strong>Password123!</strong>
+          &nbsp;&nbsp;or&nbsp;&nbsp;
+          <strong>admin@example.com</strong> / <strong>Admin123!</strong>
+        </div>
 
-          <Form onSubmit={handleSubmit(onSubmit)} aria-label="Login form">
-            <Form.Group className="mb-3" controlId="loginEmail">
-              <Form.Label>Email</Form.Label>
-              <Form.Control
-                type="email"
-                placeholder="you@example.com"
-                aria-invalid={Boolean(errors.email)}
-                {...register("email", {
-                  required: "Email is required",
-                  pattern: { value: /^\S+@\S+\.\S+$/, message: "Invalid email" }
-                })}
-              />
-              {errors.email ? (
-                <div className="text-danger small mt-1">
-                  {errors.email.message}
-                </div>
-              ) : null}
-            </Form.Group>
-
-            <Form.Group className="mb-3" controlId="loginPassword">
-              <Form.Label>Password</Form.Label>
-              <Form.Control
-                type="password"
-                aria-invalid={Boolean(errors.password)}
-                {...register("password", { required: "Password is required" })}
-              />
-              {errors.password ? (
-                <div className="text-danger small mt-1">
-                  {errors.password.message}
-                </div>
-              ) : null}
-            </Form.Group>
-
-            <div className="d-grid">
-              <Button type="submit" variant="primary" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Login"}
-              </Button>
-            </div>
-          </Form>
-
-          <div className="text-center mt-3">
-            <span className="text-muted">No account?</span>{" "}
-            <Link to="/register">Register</Link>
+        {error ? (
+          <div className="alert alert-danger py-2 small" role="alert">
+            {error}
           </div>
-        </Card.Body>
-      </Card>
+        ) : null}
+
+        <Form onSubmit={handleSubmit(onSubmit)} aria-label="Login form">
+          <Form.Group className="mb-3" controlId="loginEmail">
+            <Form.Label className="fw-semibold small">Email address</Form.Label>
+            <Form.Control
+              type="email"
+              placeholder="you@example.com"
+              aria-invalid={Boolean(errors.email)}
+              {...register("email", {
+                required: "Email is required",
+                pattern: { value: /^\S+@\S+\.\S+$/, message: "Invalid email" }
+              })}
+            />
+            {errors.email ? (
+              <div className="text-danger small mt-1">{errors.email.message}</div>
+            ) : null}
+          </Form.Group>
+
+          <Form.Group className="mb-4" controlId="loginPassword">
+            <Form.Label className="fw-semibold small">Password</Form.Label>
+            <Form.Control
+              type="password"
+              placeholder="••••••••"
+              aria-invalid={Boolean(errors.password)}
+              {...register("password", { required: "Password is required" })}
+            />
+            {errors.password ? (
+              <div className="text-danger small mt-1">{errors.password.message}</div>
+            ) : null}
+          </Form.Group>
+
+          <div className="d-grid">
+            <Button type="submit" variant="primary" size="lg" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                  Signing in...
+                </>
+              ) : "Sign in"}
+            </Button>
+          </div>
+        </Form>
+
+        <div className="text-center mt-4" style={{ fontSize: "0.875rem" }}>
+          <span style={{ color: "var(--ec-muted)" }}>Don't have an account?</span>{" "}
+          <Link to="/register" className="fw-semibold" style={{ color: "var(--ec-primary)" }}>
+            Create one
+          </Link>
+        </div>
+      </div>
     </div>
   );
 };

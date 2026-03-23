@@ -41,9 +41,9 @@ export const ProfilePage: React.FC = () => {
   return (
     <Row className="g-4">
       <Col lg={4}>
-        <Card className="shadow-sm">
-          <Card.Body>
-            <Card.Title>Profile</Card.Title>
+        <Card className="admin-card">
+          <Card.Body className="p-4">
+            <h5 className="fw-bold mb-4">My profile</h5>
             <Form onSubmit={handleSubmit(onSubmit)} aria-label="Profile edit form">
               <Form.Group className="mb-3" controlId="profileName">
                 <Form.Label>Name</Form.Label>
@@ -80,10 +80,10 @@ export const ProfilePage: React.FC = () => {
       </Col>
 
       <Col lg={8}>
-        <Card className="shadow-sm">
-          <Card.Body>
-            <div className="d-flex justify-content-between align-items-center">
-              <Card.Title className="mb-0">Order history</Card.Title>
+        <Card className="admin-card">
+          <Card.Body className="p-4">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="fw-bold mb-0">Order history</h5>
               <div className="small text-muted">{orders.length} orders</div>
             </div>
 
@@ -91,7 +91,7 @@ export const ProfilePage: React.FC = () => {
             {error ? <div className="alert alert-danger">{error}</div> : null}
 
             {!isLoading && !error ? (
-              <Table responsive hover className="mt-3" aria-label="Order history table">
+              <Table responsive hover className="table-modern mt-3" aria-label="Order history table">
                 <thead>
                   <tr>
                     <th>Order</th>

@@ -136,9 +136,9 @@ export const CheckoutPage: React.FC = () => {
   return (
     <Row className="g-4">
       <Col lg={8}>
-        <h1 className="h3 mb-3">Checkout</h1>
-        <Card className="shadow-sm">
-          <Card.Body>
+        <h1 className="page-title h3 mb-4">Checkout</h1>
+        <Card className="admin-card">
+          <Card.Body className="p-4">
             <Form onSubmit={handleSubmit(onSubmit)} aria-label="Checkout form">
               <Row className="g-3">
                 <Col md={6}>
@@ -256,9 +256,8 @@ export const CheckoutPage: React.FC = () => {
                   />
                 </Col>
 
-                <Col md={12}>
-                  <hr className="my-2" />
-                  <div className="fw-semibold mb-2">Payment (mock)</div>
+                <Col md={12} className="form-section">
+                  <span className="form-section__label">Payment details (mock)</span>
                 </Col>
                 <Col md={6}>
                   <Form.Group controlId="cardName">
@@ -330,9 +329,9 @@ export const CheckoutPage: React.FC = () => {
       </Col>
 
       <Col lg={4}>
-        <Card className="shadow-sm">
-          <Card.Body>
-            <Card.Title>Order summary</Card.Title>
+        <Card className="order-summary-card">
+          <Card.Body className="p-4">
+            <Card.Title className="fw-bold mb-3">Order summary</Card.Title>
             <div className="d-flex justify-content-between mt-3">
               <span className="text-muted">Subtotal</span>
               <span>{fmt(totals.subtotal)}</span>
