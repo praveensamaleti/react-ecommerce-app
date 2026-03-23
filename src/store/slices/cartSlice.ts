@@ -34,26 +34,47 @@ function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
 
+/**
+ * Stable composite key that uniquely identifies a cart line.
+ * Products without variants use productId alone.
+ */
+function itemKey(productId: string, variantId: string | undefined): string {
+  return variantId ? `${productId}__${variantId}` : productId;
+}
+
 function computeTotals(items: CartItem[], products: Product[]): CartTotals {
-  const map = new Map(products.map((p) => [p.id, p] as const));
+  const productMap = new Map(products.map((p) => [p.id, p]));
+
   const subtotal = items.reduce((sum, it) => {
-    const p = map.get(it.productId);
-    if (!p) return sum;
-    return sum + p.price * it.qty;
+    const product = productMap.get(it.productId);
+    if (!product) return sum;
+
+    let unitPrice = product.price;
+    if (it.variantId && product.variants?.length) {
+      const variant = product.variants.find((v) => v.id === it.variantId);
+      if (variant?.price != null) unitPrice = variant.price;
+    }
+
+    return sum + unitPrice * it.qty;
   }, 0);
+
   const itemCount = items.reduce((sum, it) => sum + it.qty, 0);
-  const discount = subtotal * 0.1; // mock 10% discount
+  const discount = subtotal * 0.1;
   const taxable = Math.max(0, subtotal - discount);
-  const tax = taxable * 0.08; // mock 8% tax
+  const tax = taxable * 0.08;
   const total = taxable + tax;
   return { subtotal, discount, tax, total, itemCount };
 }
+
+// ------------------------------------------------------------------
+// Server sync thunks
+// ------------------------------------------------------------------
 
 export const loadCartThunk = createAsyncThunk(
   "cart/loadFromServer",
   async () => {
     const response = await fetchServerCart();
-    return response.data.items;
+    return response.data.items as CartItem[];
   }
 );
 
@@ -61,9 +82,13 @@ export const syncCartThunk = createAsyncThunk(
   "cart/syncWithServer",
   async (items: CartItem[]) => {
     const response = await syncServerCart(items);
-    return response.data.items;
+    return response.data.items as CartItem[];
   }
 );
+
+// ------------------------------------------------------------------
+// Slice
+// ------------------------------------------------------------------
 
 const cartSlice = createSlice({
   name: "cart",
@@ -71,44 +96,59 @@ const cartSlice = createSlice({
   reducers: {
     addToCart(
       state,
-      action: PayloadAction<{ productId: string; qty?: number }>
+      action: PayloadAction<{ productId: string; qty?: number; variantId?: string }>
     ) {
-      const { productId, qty = 1 } = action.payload;
+      const { productId, qty = 1, variantId } = action.payload;
       const nextQty = clamp(qty, 1, 99);
-      const existing = state.items.find((i) => i.productId === productId);
+      const key = itemKey(productId, variantId);
+      const existing = state.items.find(
+        (i) => itemKey(i.productId, i.variantId) === key
+      );
       if (existing) {
         existing.qty = clamp(existing.qty + nextQty, 1, 99);
       } else {
-        state.items.push({ productId, qty: nextQty });
+        state.items.push({ productId, qty: nextQty, variantId });
       }
     },
-    removeFromCart(state, action: PayloadAction<string>) {
-      state.items = state.items.filter((i) => i.productId !== action.payload);
+
+    removeFromCart(
+      state,
+      action: PayloadAction<{ productId: string; variantId?: string }>
+    ) {
+      const { productId, variantId } = action.payload;
+      const key = itemKey(productId, variantId);
+      state.items = state.items.filter(
+        (i) => itemKey(i.productId, i.variantId) !== key
+      );
     },
-    setQty(state, action: PayloadAction<{ productId: string; qty: number }>) {
-      const { productId, qty } = action.payload;
-      const next = clamp(qty, 1, 99);
-      const item = state.items.find((i) => i.productId === productId);
-      if (item) {
-        item.qty = next;
-      }
+
+    setQty(
+      state,
+      action: PayloadAction<{ productId: string; qty: number; variantId?: string }>
+    ) {
+      const { productId, qty, variantId } = action.payload;
+      const key = itemKey(productId, variantId);
+      const item = state.items.find(
+        (i) => itemKey(i.productId, i.variantId) === key
+      );
+      if (item) item.qty = clamp(qty, 1, 99);
     },
+
     clearCart(state) {
       state.items = [];
       state.totals = { ...initialTotals };
       state.serverSynced = false;
     },
+
     recomputeTotals(state, action: PayloadAction<Product[]>) {
-      const nextTotals = computeTotals(state.items, action.payload);
-      const hasChanged =
-        nextTotals.subtotal !== state.totals.subtotal ||
-        nextTotals.discount !== state.totals.discount ||
-        nextTotals.tax !== state.totals.tax ||
-        nextTotals.total !== state.totals.total ||
-        nextTotals.itemCount !== state.totals.itemCount;
-      if (hasChanged) {
-        state.totals = nextTotals;
-      }
+      const next = computeTotals(state.items, action.payload);
+      const changed =
+        next.subtotal !== state.totals.subtotal ||
+        next.discount !== state.totals.discount ||
+        next.tax !== state.totals.tax ||
+        next.total !== state.totals.total ||
+        next.itemCount !== state.totals.itemCount;
+      if (changed) state.totals = next;
     },
   },
   extraReducers: (builder) => {
@@ -127,11 +167,21 @@ const cartSlice = createSlice({
 export const { addToCart, removeFromCart, setQty, clearCart, recomputeTotals } =
   cartSlice.actions;
 
-type CartThunkState = { auth: { token: string | null }; cart: { items: CartItem[] } };
+// ------------------------------------------------------------------
+// Composite thunks — mutate locally then sync to server when authed
+// ------------------------------------------------------------------
+
+type CartThunkState = {
+  auth: { token: string | null };
+  cart: { items: CartItem[] };
+};
 
 export const addToCartThunk = createAsyncThunk(
   "cart/addItem",
-  async (payload: { productId: string; qty?: number }, { dispatch, getState }) => {
+  async (
+    payload: { productId: string; qty?: number; variantId?: string },
+    { dispatch, getState }
+  ) => {
     dispatch(addToCart(payload));
     const state = getState() as CartThunkState;
     if (state.auth.token) {
@@ -142,8 +192,11 @@ export const addToCartThunk = createAsyncThunk(
 
 export const removeFromCartThunk = createAsyncThunk(
   "cart/removeItem",
-  async (productId: string, { dispatch, getState }) => {
-    dispatch(removeFromCart(productId));
+  async (
+    payload: { productId: string; variantId?: string },
+    { dispatch, getState }
+  ) => {
+    dispatch(removeFromCart(payload));
     const state = getState() as CartThunkState;
     if (state.auth.token) {
       await dispatch(syncCartThunk(state.cart.items));
@@ -153,7 +206,10 @@ export const removeFromCartThunk = createAsyncThunk(
 
 export const setQtyThunk = createAsyncThunk(
   "cart/setItemQty",
-  async (payload: { productId: string; qty: number }, { dispatch, getState }) => {
+  async (
+    payload: { productId: string; qty: number; variantId?: string },
+    { dispatch, getState }
+  ) => {
     dispatch(setQty(payload));
     const state = getState() as CartThunkState;
     if (state.auth.token) {
