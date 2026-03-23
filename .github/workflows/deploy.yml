@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: '20'
       - run: node --version && npm --version
-      - run: npm install --legacy-peer-deps
+      - run: npm install
       - name: Run tests with coverage check (85% threshold enforced)
         run: npm run test:ci
         env:
