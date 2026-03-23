@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AdminDashboardPage } from './AdminDashboardPage';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -167,7 +167,8 @@ describe('AdminDashboardPage', () => {
     wrap();
     const searchInput = screen.getByRole('textbox', { name: /search products/i });
     fireEvent.change(searchInput, { target: { value: 'nonexistent' } });
-    expect(screen.queryByText('Admin Product')).not.toBeInTheDocument();
+    const productTable = screen.getByRole('table', { name: /admin product table/i });
+    expect(within(productTable).queryByText('Admin Product')).not.toBeInTheDocument();
   });
 
   it('product search clears to show all products', () => {

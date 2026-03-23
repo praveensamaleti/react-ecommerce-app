@@ -25,7 +25,7 @@ const setupMocks = (user: any = null) => {
     selector({
       auth: { user, token: null, isLoading: false, error: null },
       cart: { items: [], totals: { subtotal: 0, discount: 0, tax: 0, total: 0, itemCount: 0 } },
-      products: { products: [], totalCount: 0, isLoading: false, error: null, filters: defaultFilters },
+      products: { products: [], totalCount: 0, isLoading: false, error: null, filters: defaultFilters, categories: [] },
       orders: { orders: [], isLoading: false, error: null },
       theme: { theme: 'light' },
       currency: { currency: 'USD' },

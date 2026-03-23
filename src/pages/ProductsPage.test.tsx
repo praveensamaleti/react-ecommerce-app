@@ -57,7 +57,7 @@ const makeState = (overrides: any = {}) => {
         isLoading: false,
         error: null,
         filters: defaultFilters,
-        categories: [],
+        categories: ['Electronics', 'Clothing'],
         ...overrides,
       },
       cart: { items: [] },
