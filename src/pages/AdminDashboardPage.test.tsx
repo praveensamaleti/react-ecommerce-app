@@ -3,11 +3,19 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { MemoryRouter } from 'react-router-dom';
 import { AdminDashboardPage } from './AdminDashboardPage';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
+import api from '../utils/api';
 
 jest.mock('../store/hooks', () => ({
   useAppDispatch: jest.fn(),
   useAppSelector: jest.fn(),
 }));
+jest.mock('../utils/api', () => ({
+  __esModule: true,
+  default: { post: jest.fn(), delete: jest.fn() },
+}));
+
+const mockApiPost = (api as any).post as jest.Mock;
+const mockApiDelete = (api as any).delete as jest.Mock;
 jest.mock('../hooks/useCurrencyFormatter', () => ({
   useCurrencyFormatter: () => require('../utils/money').formatMoney,
 }));
@@ -29,6 +37,14 @@ const product = {
   description: 'desc',
   specs: { Brand: 'Acme' },
   reviews: [],
+  variants: [],
+};
+
+const productWithVariants = {
+  ...product,
+  variants: [
+    { id: 'v1', sku: 'AP-RED', stock: 8, price: 109, attributes: { color: 'Red' }, label: 'Red' },
+  ],
 };
 
 const order = {
@@ -64,6 +80,8 @@ const setup = (productOverrides: any = {}, orderOverrides: any = {}) => {
 beforeEach(() => {
   jest.clearAllMocks();
   mockDispatch.mockResolvedValue(undefined);
+  mockApiPost.mockResolvedValue({ data: { id: 'v-new', stock: 10, price: 29.99, attributes: { color: 'Green' }, label: 'Green', sku: 'NEW-SKU' } });
+  mockApiDelete.mockResolvedValue({});
   setup();
 });
 
@@ -115,7 +133,7 @@ describe('AdminDashboardPage', () => {
     wrap();
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'New Product' } });
     fireEvent.change(screen.getByLabelText('Price'), { target: { value: '50' } });
-    fireEvent.change(screen.getByLabelText('Stock'), { target: { value: '10' } });
+    fireEvent.change(screen.getByLabelText('Base stock'), { target: { value: '10' } });
     fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'A new product' } });
     fireEvent.click(screen.getByRole('button', { name: /create product/i }));
     await waitFor(() => {
@@ -197,5 +215,104 @@ describe('AdminDashboardPage', () => {
     wrap();
     const badge = screen.getAllByText('50').find((el) => el.closest('.badge'));
     expect(badge?.closest('.badge')).toHaveClass('bg-success');
+  });
+
+  it('"Manage variants" button opens VariantManagerModal', async () => {
+    wrap();
+    fireEvent.click(screen.getByRole('button', { name: /manage variants for admin product/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/variants — admin product/i)).toBeInTheDocument();
+    });
+  });
+
+  it('VariantManagerModal shows "No variants yet" when product has no variants', async () => {
+    wrap();
+    fireEvent.click(screen.getByRole('button', { name: /manage variants for admin product/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/no variants yet/i)).toBeInTheDocument();
+    });
+  });
+
+  it('VariantManagerModal shows existing variants table when product has variants', async () => {
+    setup({ products: [productWithVariants] });
+    wrap();
+    fireEvent.click(screen.getByRole('button', { name: /manage variants for admin product/i }));
+    await waitFor(() => {
+      expect(screen.getByText('Red')).toBeInTheDocument();
+      expect(screen.getByText('AP-RED')).toBeInTheDocument();
+    });
+  });
+
+  it('VariantManagerModal close button hides the modal', async () => {
+    wrap();
+    fireEvent.click(screen.getByRole('button', { name: /manage variants for admin product/i }));
+    await waitFor(() => expect(screen.getByText(/no variants yet/i)).toBeInTheDocument());
+    // Bootstrap Modal renders both a header × button and a footer "Close" button; click the last one
+    const closeBtns = screen.getAllByRole('button', { name: /close/i });
+    fireEvent.click(closeBtns[closeBtns.length - 1]);
+    await waitFor(() => {
+      expect(screen.queryByText(/variants — admin product/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it('VariantManagerModal "Add variant" form calls api.post and refreshes products', async () => {
+    wrap();
+    fireEvent.click(screen.getByRole('button', { name: /manage variants for admin product/i }));
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+
+    // Fill in the stock field (required) inside the modal
+    const modal = screen.getByRole('dialog');
+    const stockInput = within(modal).getAllByRole('spinbutton')[0];
+    fireEvent.change(stockInput, { target: { value: '10' } });
+
+    fireEvent.click(within(modal).getByRole('button', { name: /add variant/i }));
+
+    await waitFor(() => {
+      expect(mockApiPost).toHaveBeenCalledWith('/api/products/p1/variants', expect.objectContaining({ stock: 10 }));
+    });
+    expect(mockDispatch).toHaveBeenCalled();
+  });
+
+  it('VariantManagerModal delete button calls api.delete', async () => {
+    setup({ products: [productWithVariants] });
+    wrap();
+    fireEvent.click(screen.getByRole('button', { name: /manage variants for admin product/i }));
+    await waitFor(() => expect(screen.getByText('Red')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /delete variant red/i }));
+
+    await waitFor(() => {
+      expect(mockApiDelete).toHaveBeenCalledWith('/api/products/p1/variants/v1');
+    });
+  });
+
+  it('inventory tab search filters results', async () => {
+    wrap();
+    fireEvent.click(screen.getByRole('tab', { name: /inventory/i }));
+    await waitFor(() => expect(screen.getByRole('table', { name: /inventory table/i })).toBeInTheDocument());
+    const searchInput = screen.getByRole('textbox', { name: /search inventory/i });
+    fireEvent.change(searchInput, { target: { value: 'nonexistent' } });
+    const table = screen.getByRole('table', { name: /inventory table/i });
+    expect(within(table).queryByText('Admin Product')).not.toBeInTheDocument();
+  });
+
+  it('inventory tab shows variant count column', async () => {
+    setup({ products: [productWithVariants] });
+    wrap();
+    fireEvent.click(screen.getByRole('tab', { name: /inventory/i }));
+    await waitFor(() => expect(screen.getByRole('table', { name: /inventory table/i })).toBeInTheDocument());
+    const invTable = screen.getByRole('table', { name: /inventory table/i });
+    expect(within(invTable).getByText('1 variants')).toBeInTheDocument();
+  });
+
+  it('"+ Variants" button label shows when product has no variants', () => {
+    wrap();
+    expect(screen.getByRole('button', { name: /manage variants for admin product/i })).toHaveTextContent('+ Variants');
+  });
+
+  it('shows variant count label when product has variants', () => {
+    setup({ products: [productWithVariants] });
+    wrap();
+    expect(screen.getByRole('button', { name: /manage variants for admin product/i })).toHaveTextContent('1 variants');
   });
 });

@@ -7,6 +7,9 @@ import cartReducer, {
   recomputeTotals,
   loadCartThunk,
   syncCartThunk,
+  addToCartThunk,
+  removeFromCartThunk,
+  setQtyThunk,
 } from "./cartSlice";
 import * as cartApi from "../../utils/cartApi";
 import type { Product } from "../../types/domain";
@@ -41,8 +44,16 @@ const initialTotals = {
   itemCount: 0,
 };
 
-function makeStore() {
-  return configureStore({ reducer: { cart: cartReducer } });
+function makeStore(extraReducers: Record<string, any> = {}) {
+  return configureStore({ reducer: { cart: cartReducer, ...extraReducers } });
+}
+
+function makeAuthStore(token: string | null) {
+  const authReducer = (state = { token }, action: any) => {
+    if (action.type === "__setToken") return { token: action.payload };
+    return state;
+  };
+  return configureStore({ reducer: { cart: cartReducer, auth: authReducer } });
 }
 
 let store: ReturnType<typeof makeStore>;
@@ -102,12 +113,30 @@ describe("addToCart", () => {
 describe("removeFromCart", () => {
   it("removes an existing item", () => {
     store.dispatch(addToCart({ productId: "p1" }));
-    store.dispatch(removeFromCart("p1"));
+    store.dispatch(removeFromCart({ productId: "p1" }));
     expect(store.getState().cart.items).toHaveLength(0);
   });
 
   it("does not throw for a missing id", () => {
-    expect(() => store.dispatch(removeFromCart("missing"))).not.toThrow();
+    expect(() => store.dispatch(removeFromCart({ productId: "missing" }))).not.toThrow();
+  });
+
+  it("removes only the matching variant, leaves other variants", () => {
+    store.dispatch(addToCart({ productId: "p1", variantId: "v1" }));
+    store.dispatch(addToCart({ productId: "p1", variantId: "v2" }));
+    store.dispatch(removeFromCart({ productId: "p1", variantId: "v1" }));
+    const { items } = store.getState().cart;
+    expect(items).toHaveLength(1);
+    expect(items[0].variantId).toBe("v2");
+  });
+
+  it("does not remove no-variant item when removing a variant item", () => {
+    store.dispatch(addToCart({ productId: "p1" }));
+    store.dispatch(addToCart({ productId: "p1", variantId: "v1" }));
+    store.dispatch(removeFromCart({ productId: "p1", variantId: "v1" }));
+    const { items } = store.getState().cart;
+    expect(items).toHaveLength(1);
+    expect(items[0].variantId).toBeUndefined();
   });
 });
 
@@ -195,6 +224,20 @@ describe("recomputeTotals", () => {
 
     expect(totals1).toBe(totals2);
   });
+
+  it("uses variant price override when item has variantId", () => {
+    const productWithVariant: Product = {
+      ...p1,
+      variants: [{ id: "v1", stock: 5, price: 150, attributes: {} }],
+    };
+    store.dispatch(addToCart({ productId: "p1", qty: 2, variantId: "v1" }));
+    store.dispatch(recomputeTotals([productWithVariant]));
+
+    // variant price 150 * 2 = 300, discount 10% = 30, taxable 270, tax 21.6
+    const { totals } = store.getState().cart;
+    expect(totals.subtotal).toBeCloseTo(300);
+    expect(totals.discount).toBeCloseTo(30);
+  });
 });
 
 describe("loadCartThunk", () => {
@@ -265,5 +308,71 @@ describe("syncCartThunk", () => {
     await store.dispatch(syncCartThunk(localItems));
 
     expect(mockSyncServerCart).toHaveBeenCalledWith(localItems);
+  });
+});
+
+describe("addToCartThunk", () => {
+  it("adds item locally when no auth token", async () => {
+    const s = makeAuthStore(null);
+    await s.dispatch(addToCartThunk({ productId: "p1", qty: 2 }));
+    expect(s.getState().cart.items).toEqual([{ productId: "p1", qty: 2 }]);
+    expect(mockSyncServerCart).not.toHaveBeenCalled();
+  });
+
+  it("adds item and syncs when auth token present", async () => {
+    const s = makeAuthStore("tok123");
+    mockSyncServerCart.mockResolvedValueOnce({
+      data: { items: [{ productId: "p1", qty: 2 }], hasOutOfStockItems: false },
+    });
+    await s.dispatch(addToCartThunk({ productId: "p1", qty: 2 }));
+    expect(s.getState().cart.items).toEqual([{ productId: "p1", qty: 2 }]);
+    expect(mockSyncServerCart).toHaveBeenCalledTimes(1);
+  });
+
+  it("supports variantId payload", async () => {
+    const s = makeAuthStore(null);
+    await s.dispatch(addToCartThunk({ productId: "p1", variantId: "v1" }));
+    expect(s.getState().cart.items[0]).toEqual({ productId: "p1", qty: 1, variantId: "v1" });
+  });
+});
+
+describe("removeFromCartThunk", () => {
+  it("removes item locally when no auth token", async () => {
+    const s = makeAuthStore(null);
+    s.dispatch(addToCart({ productId: "p1" }));
+    await s.dispatch(removeFromCartThunk({ productId: "p1" }));
+    expect(s.getState().cart.items).toHaveLength(0);
+    expect(mockSyncServerCart).not.toHaveBeenCalled();
+  });
+
+  it("removes item and syncs when auth token present", async () => {
+    const s = makeAuthStore("tok123");
+    s.dispatch(addToCart({ productId: "p1" }));
+    mockSyncServerCart.mockResolvedValueOnce({
+      data: { items: [], hasOutOfStockItems: false },
+    });
+    await s.dispatch(removeFromCartThunk({ productId: "p1" }));
+    expect(s.getState().cart.items).toHaveLength(0);
+    expect(mockSyncServerCart).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("setQtyThunk", () => {
+  it("updates qty locally when no auth token", async () => {
+    const s = makeAuthStore(null);
+    s.dispatch(addToCart({ productId: "p1" }));
+    await s.dispatch(setQtyThunk({ productId: "p1", qty: 7 }));
+    expect(s.getState().cart.items[0].qty).toBe(7);
+    expect(mockSyncServerCart).not.toHaveBeenCalled();
+  });
+
+  it("updates qty and syncs when auth token present", async () => {
+    const s = makeAuthStore("tok123");
+    s.dispatch(addToCart({ productId: "p1" }));
+    mockSyncServerCart.mockResolvedValueOnce({
+      data: { items: [{ productId: "p1", qty: 7 }], hasOutOfStockItems: false },
+    });
+    await s.dispatch(setQtyThunk({ productId: "p1", qty: 7 }));
+    expect(mockSyncServerCart).toHaveBeenCalledTimes(1);
   });
 });

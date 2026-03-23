@@ -20,7 +20,17 @@ const makeProduct = (overrides: Partial<Product> = {}): Product => ({
   description: 'A great product',
   specs: {},
   reviews: [],
+  variants: [],
   ...overrides,
+});
+
+const makeVariant = (id: string, price: number, attrs: Record<string, string> = {}) => ({
+  id,
+  sku: `SKU-${id}`,
+  stock: 5,
+  price,
+  attributes: attrs,
+  label: Object.values(attrs).join(' / '),
 });
 
 const wrap = (ui: React.ReactElement) =>
@@ -115,5 +125,61 @@ describe('ProductCard', () => {
     wrap(<ProductCard product={makeProduct()} onAddToCart={jest.fn()} cartQty={1} onRemoveFromCart={onRemoveFromCart} />);
     fireEvent.click(screen.getByRole('button', { name: /decrease quantity/i }));
     expect(onRemoveFromCart).toHaveBeenCalledWith('p1');
+  });
+
+  describe('variant product', () => {
+    it('shows "From $X" price prefix using the lowest variant price', () => {
+      const product = makeProduct({
+        variants: [makeVariant('v1', 39.99), makeVariant('v2', 59.99)],
+      });
+      wrap(<ProductCard product={product} onAddToCart={jest.fn()} />);
+      expect(screen.getByText(/from/i)).toBeInTheDocument();
+      expect(screen.getByText(/\$39\.99/)).toBeInTheDocument();
+    });
+
+    it('shows "X options" badge', () => {
+      const product = makeProduct({
+        variants: [makeVariant('v1', 29.99), makeVariant('v2', 39.99)],
+      });
+      wrap(<ProductCard product={product} onAddToCart={jest.fn()} />);
+      expect(screen.getByText('2 options')).toBeInTheDocument();
+    });
+
+    it('shows "Select options" link instead of Add to Cart button', () => {
+      const product = makeProduct({
+        variants: [makeVariant('v1', 29.99)],
+      });
+      wrap(<ProductCard product={product} onAddToCart={jest.fn()} />);
+      expect(screen.getByRole('link', { name: /select options for test widget/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /add test widget to cart/i })).toBeNull();
+    });
+
+    it('shows colour swatches when variants have color attribute', () => {
+      const product = makeProduct({
+        variants: [
+          makeVariant('v1', 29.99, { color: 'Red' }),
+          makeVariant('v2', 39.99, { color: 'Blue' }),
+        ],
+      });
+      wrap(<ProductCard product={product} onAddToCart={jest.fn()} />);
+      expect(screen.getByLabelText('Available colours')).toBeInTheDocument();
+      expect(screen.getByLabelText('Red')).toBeInTheDocument();
+      expect(screen.getByLabelText('Blue')).toBeInTheDocument();
+    });
+
+    it('does not show colour swatches when variants have no color attribute', () => {
+      const product = makeProduct({
+        variants: [makeVariant('v1', 29.99, { size: 'M' })],
+      });
+      wrap(<ProductCard product={product} onAddToCart={jest.fn()} />);
+      expect(screen.queryByLabelText('Available colours')).toBeNull();
+    });
+
+    it('uses product price when variant has no price override', () => {
+      const noOverrideVariant = { id: 'v1', stock: 5, attributes: {}, variants: [] as any };
+      const product = makeProduct({ price: 99.99, variants: [noOverrideVariant] });
+      wrap(<ProductCard product={product} onAddToCart={jest.fn()} />);
+      expect(screen.getByText(/\$99\.99/)).toBeInTheDocument();
+    });
   });
 });
