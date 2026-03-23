@@ -3,8 +3,14 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { CartPage } from './CartPage';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { removeFromCart, setQty } from '../store/slices/cartSlice';
+import { removeFromCartThunk, setQtyThunk } from '../store/slices/cartSlice';
 import { useCartAutoTotals } from '../hooks/useCartAutoTotals';
+
+jest.mock('../store/slices/cartSlice', () => ({
+  ...jest.requireActual('../store/slices/cartSlice'),
+  removeFromCartThunk: jest.fn(),
+  setQtyThunk: jest.fn(),
+}));
 
 jest.mock('../store/hooks', () => ({
   useAppDispatch: jest.fn(),
@@ -56,6 +62,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockDispatch.mockResolvedValue(undefined);
   (useCartAutoTotals as jest.Mock).mockReturnValue(undefined);
+  (removeFromCartThunk as jest.Mock).mockReturnValue({ _thunk: 'remove' });
+  (setQtyThunk as jest.Mock).mockReturnValue({ _thunk: 'setQty' });
   makeState();
 });
 
@@ -79,16 +87,18 @@ describe('CartPage', () => {
     expect(screen.getByText('Cart Item')).toBeInTheDocument();
   });
 
-  it('remove button dispatches removeFromCart', () => {
+  it('remove button dispatches removeFromCartThunk', () => {
     wrap();
     fireEvent.click(screen.getByRole('button', { name: /remove cart item from cart/i }));
-    expect(mockDispatch).toHaveBeenCalledWith(removeFromCart('p1'));
+    expect(removeFromCartThunk).toHaveBeenCalledWith('p1');
+    expect(mockDispatch).toHaveBeenCalledWith({ _thunk: 'remove' });
   });
 
-  it('qty change dispatches setQty', () => {
+  it('qty change dispatches setQtyThunk', () => {
     wrap();
     fireEvent.change(screen.getByLabelText(/quantity for cart item/i), { target: { value: '3' } });
-    expect(mockDispatch).toHaveBeenCalledWith(setQty({ productId: 'p1', qty: 3 }));
+    expect(setQtyThunk).toHaveBeenCalledWith({ productId: 'p1', qty: 3 });
+    expect(mockDispatch).toHaveBeenCalledWith({ _thunk: 'setQty' });
   });
 
   it('shows subtotal in order summary', () => {

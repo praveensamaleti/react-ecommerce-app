@@ -3,8 +3,13 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ProductDetailPage } from './ProductDetailPage';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { addToCart } from '../store/slices/cartSlice';
+import { addToCartThunk } from '../store/slices/cartSlice';
 import { useCartAutoTotals } from '../hooks/useCartAutoTotals';
+
+jest.mock('../store/slices/cartSlice', () => ({
+  ...jest.requireActual('../store/slices/cartSlice'),
+  addToCartThunk: jest.fn(),
+}));
 
 jest.mock('../store/hooks', () => ({
   useAppDispatch: jest.fn(),
@@ -54,6 +59,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockDispatch.mockResolvedValue(undefined);
   (useCartAutoTotals as jest.Mock).mockReturnValue(undefined);
+  (addToCartThunk as jest.Mock).mockReturnValue({ _thunk: 'addToCart' });
   makeState();
 });
 
@@ -101,10 +107,11 @@ describe('ProductDetailPage', () => {
     expect(screen.getByText('A fancy gadget')).toBeInTheDocument();
   });
 
-  it('Add to cart button dispatches addToCart with clamped qty', () => {
+  it('Add to cart button dispatches addToCartThunk with clamped qty', () => {
     wrap();
     fireEvent.click(screen.getByRole('button', { name: /add to cart/i }));
-    expect(mockDispatch).toHaveBeenCalledWith(addToCart({ productId: 'p1', qty: 1 }));
+    expect(addToCartThunk).toHaveBeenCalledWith({ productId: 'p1', qty: 1 });
+    expect(mockDispatch).toHaveBeenCalledWith({ _thunk: 'addToCart' });
   });
 
   it('shows review when product has reviews', () => {
