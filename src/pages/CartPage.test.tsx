@@ -90,7 +90,7 @@ describe('CartPage', () => {
   it('remove button dispatches removeFromCartThunk', () => {
     wrap();
     fireEvent.click(screen.getByRole('button', { name: /remove cart item from cart/i }));
-    expect(removeFromCartThunk).toHaveBeenCalledWith('p1');
+    expect(removeFromCartThunk).toHaveBeenCalledWith({ productId: 'p1', variantId: undefined });
     expect(mockDispatch).toHaveBeenCalledWith({ _thunk: 'remove' });
   });
 
