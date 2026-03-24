@@ -40,7 +40,7 @@ export const HomePage: React.FC = () => {
   };
 
   const onRemove = (productId: string) => {
-    dispatch(removeFromCartThunk(productId));
+    dispatch(removeFromCartThunk({ productId }));
   };
 
   const onQty = (productId: string, qty: number) => {

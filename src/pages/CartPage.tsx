@@ -70,7 +70,7 @@ export const CartPage: React.FC = () => {
               availableStock={p.stock}
               onQtyChange={(q) => dispatch(setQtyThunk({ productId: p.id, qty: q }))}
               onRemove={() => {
-                dispatch(removeFromCartThunk(p.id));
+                dispatch(removeFromCartThunk({ productId: p.id, variantId: it.variantId }));
                 toast.info("Removed from cart.");
               }}
             />

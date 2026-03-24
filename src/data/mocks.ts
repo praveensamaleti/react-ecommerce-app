@@ -36,6 +36,7 @@ export const mockProducts: Product[] = [
       },
     ],
     featured: true,
+    variants: [],
   },
   {
     id: "p2",
@@ -56,6 +57,7 @@ export const mockProducts: Product[] = [
     },
     reviews: [],
     featured: true,
+    variants: [],
   },
   {
     id: "p3",
@@ -76,6 +78,7 @@ export const mockProducts: Product[] = [
     },
     reviews: [],
     featured: true,
+    variants: [],
   },
   {
     id: "p4",
@@ -95,6 +98,7 @@ export const mockProducts: Product[] = [
       Water: "IP67",
     },
     reviews: [],
+    variants: [],
   },
   {
     id: "p5",
@@ -114,6 +118,7 @@ export const mockProducts: Product[] = [
       Mounts: "Included kit",
     },
     reviews: [],
+    variants: [],
   },
   {
     id: "p6",
@@ -132,6 +137,7 @@ export const mockProducts: Product[] = [
       Keycaps: "PBT",
     },
     reviews: [],
+    variants: [],
   },
   {
     id: "p7",
@@ -151,6 +157,7 @@ export const mockProducts: Product[] = [
       Weight: "260g",
     },
     reviews: [],
+    variants: [],
   },
   {
     id: "p8",
@@ -169,6 +176,7 @@ export const mockProducts: Product[] = [
       Weight: "90g",
     },
     reviews: [],
+    variants: [],
   },
   {
     id: "p9",
@@ -187,6 +195,7 @@ export const mockProducts: Product[] = [
       HDR: "HDR400",
     },
     reviews: [],
+    variants: [],
   },
   {
     id: "p10",
@@ -205,6 +214,7 @@ export const mockProducts: Product[] = [
       PD: "100W pass-through",
     },
     reviews: [],
+    variants: [],
   },
   {
     id: "p11",
@@ -219,6 +229,7 @@ export const mockProducts: Product[] = [
     specs: { Material: "100% Cotton", Fit: "Regular", Care: "Machine wash" },
     reviews: [],
     featured: true,
+    variants: [],
   },
   {
     id: "p12",
@@ -233,6 +244,7 @@ export const mockProducts: Product[] = [
     specs: { Material: "Denim", Fit: "Slim", Lining: "Unlined" },
     reviews: [],
     featured: true,
+    variants: [],
   },
   {
     id: "p13",
@@ -246,6 +258,7 @@ export const mockProducts: Product[] = [
     description: "Stretchy joggers designed for comfort from desk to weekend.",
     specs: { Material: "Cotton blend", Fit: "Tapered", Pockets: "Zipper" },
     reviews: [],
+    variants: [],
   },
   {
     id: "p14",
@@ -259,6 +272,7 @@ export const mockProducts: Product[] = [
     description: "Midweight hoodie with a soft fleece interior and clean look.",
     specs: { Material: "Fleece", Fit: "Relaxed", Care: "Machine wash" },
     reviews: [],
+    variants: [],
   },
   {
     id: "p15",
@@ -272,6 +286,7 @@ export const mockProducts: Product[] = [
     description: "Lightweight sneakers with cushion and breathable upper.",
     specs: { Upper: "Mesh", Sole: "Rubber", Use: "Casual" },
     reviews: [],
+    variants: [],
   },
   {
     id: "p16",
@@ -285,6 +300,7 @@ export const mockProducts: Product[] = [
     description: "Genuine leather belt with matte buckle for a minimal style.",
     specs: { Material: "Leather", Buckle: "Matte", Width: "35mm" },
     reviews: [],
+    variants: [],
   },
   {
     id: "p17",
@@ -298,6 +314,7 @@ export const mockProducts: Product[] = [
     description: "Packable windbreaker with water-resistant finish.",
     specs: { Material: "Nylon", Packable: "Yes", Water: "Resistant" },
     reviews: [],
+    variants: [],
   },
   {
     id: "p18",
@@ -311,6 +328,7 @@ export const mockProducts: Product[] = [
     description: "Versatile chinos with a clean silhouette and soft feel.",
     specs: { Material: "Cotton twill", Fit: "Slim", Stretch: "2%" },
     reviews: [],
+    variants: [],
   },
   {
     id: "p19",
@@ -324,6 +342,7 @@ export const mockProducts: Product[] = [
     description: "Warm, breathable socks for daily wear and travel.",
     specs: { Material: "Wool blend", Pack: "3", Care: "Machine wash" },
     reviews: [],
+    variants: [],
   },
   {
     id: "p20",
@@ -337,6 +356,7 @@ export const mockProducts: Product[] = [
     description: "Adjustable cap with minimal branding and breathable fabric.",
     specs: { Material: "Cotton", Closure: "Adjustable", Style: "6-panel" },
     reviews: [],
+    variants: [],
   }
 ];
 

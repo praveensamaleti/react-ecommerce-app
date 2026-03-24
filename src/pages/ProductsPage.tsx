@@ -81,7 +81,7 @@ export const ProductsPage: React.FC = () => {
   };
 
   const onRemove = (id: string) => {
-    dispatch(removeFromCartThunk(id));
+    dispatch(removeFromCartThunk({ productId: id }));
   };
 
   const onQty = (id: string, qty: number) => {
